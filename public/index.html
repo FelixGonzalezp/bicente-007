@@ -73,6 +73,22 @@
   .chip.ok{background:rgba(74,222,128,.2);border-color:var(--ok);color:var(--ok);text-decoration:line-through}
   .barra{height:12px;background:#0d1330;border-radius:999px;overflow:hidden;margin:10px 0 4px}
   .barra>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .6s}
+  .campo{width:100%;min-height:48px;padding:10px 14px;border-radius:12px;border:1px solid #33407a;background:var(--panel2);color:var(--text);font:inherit;font-size:1.1rem}
+  .campo:focus{outline:2px solid var(--gold);outline-offset:1px}
+  .host-m{cursor:pointer}
+  .host-m.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(245,197,66,.35)}
+  .det{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:760px){.det{grid-template-columns:1fr}}
+  .det h3{margin:0 0 8px;font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+  .rank{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  .rank li{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:8px;background:var(--panel2);font-weight:700}
+  .rank .t{font-variant-numeric:tabular-nums;color:var(--gold-soft)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips span{padding:3px 10px;border-radius:999px;background:var(--panel2);border:1px solid #33407a;font-size:.9rem}
+  .podio{margin-top:16px;text-align:left}
+  .podio h3{margin:0 0 10px;text-align:center;font-size:.8rem;color:var(--gold)}
+  .podio .rank li{font-size:1.05rem;padding:8px 12px}
+  .vacio{color:var(--muted);font-size:.9rem;margin:0}
   .host-grid{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:24px;align-items:start}
   @media (max-width:760px){.host-grid{grid-template-columns:1fr}}
   .qr{background:#fff;padding:14px;border-radius:16px;display:inline-block;max-width:100%}
@@ -248,8 +264,9 @@
 </head>
 <body>
 
-<audio id="musica" src="musica/agente-007.mp3" loop preload="auto"></audio>
-<button class="btn-musica" id="btnMusica" type="button" title="Música" aria-label="Activar o silenciar la música">🔇</button>
+<!-- La música es solo del proyector (?host): en los celulares no se descarga ni se muestra el botón -->
+<audio id="musica" loop preload="none"></audio>
+<button class="btn-musica" id="btnMusica" type="button" title="Música" aria-label="Activar o silenciar la música" hidden>🔇</button>
 
 <!-- ============ VISTA JUGADOR (celular) ============ -->
 <div id="vistaJugador" class="wrap">
@@ -263,6 +280,17 @@
   </div>
 
   <span class="badge" id="badgePrueba" hidden>MODO PRUEBA · datos solo en este navegador</span>
+
+  <!-- Nombre de agente -->
+  <section id="sNombre" hidden>
+    <div class="tarjeta">
+      <h2>🕶️ Identifícate, agente</h2>
+      <p>Elige tu <strong>nombre en clave</strong>. Aparecerá en el ranking del proyector, así que usa un alias divertido (sin RUT ni datos personales).</p>
+      <input id="inpNombre" class="campo" type="text" maxlength="20" autocomplete="off" autocapitalize="words" placeholder="Ej.: Agente Cero Sesgo">
+      <button class="btn block" id="btnNombre" type="button" style="margin-top:12px">Registrar agente</button>
+      <p class="msg" id="msgNombre"></p>
+    </div>
+  </section>
 
   <!-- Intro -->
   <section id="sIntro" class="intro" hidden>
@@ -430,20 +458,27 @@
     </div>
 
     <div>
-      <div class="tarjeta">
+      <div class="tarjeta host-m" data-m="m1" tabindex="0" role="button">
         <h2>🔐 Misión 1 · Cerradura</h2>
         <p class="pequeno" id="hostM1"></p>
         <div class="barra"><span id="barM1"></span></div>
       </div>
-      <div class="tarjeta">
+      <div class="tarjeta host-m" data-m="m2" tabindex="0" role="button">
         <h2>🕵️ Misión 2 · Rastro digital</h2>
         <p class="pequeno" id="hostM2"></p>
         <div class="barra"><span id="barM2"></span></div>
       </div>
-      <div class="tarjeta">
+      <div class="tarjeta host-m" data-m="m3" tabindex="0" role="button">
         <h2>🧩 Misión 3 · Agentes encubiertos</h2>
         <p class="pequeno" id="hostM3"></p>
         <div class="barra"><span id="barM3"></span></div>
+      </div>
+      <div class="tarjeta" id="hostDetalle">
+        <h2 id="detTitulo">Toca una misión para ver el ranking</h2>
+        <div class="det">
+          <div><h3>🏆 Más rápidos</h3><ol class="rank" id="detRanking"></ol></div>
+          <div><h3>🕹️ Siguen jugando</h3><div class="chips" id="detJugando"></div></div>
+        </div>
       </div>
       <div class="tarjeta destacado" id="hostEstado"></div>
     </div>
@@ -459,6 +494,10 @@
         <div class="insignias"><span>💾 DATOS ✔</span><span>🧠 MODELOS ✔</span></div>
         <p>🔓 Clave de la bóveda</p>
         <div class="clave-pixel" id="claveHost"></div>
+        <div class="podio" id="podio" hidden>
+          <h3 class="pixel">Podio de agentes</h3>
+          <ol class="rank" id="podioLista"></ol>
+        </div>
       </div>
     </div>
   </div>
@@ -548,6 +587,8 @@ async function obtenerEstado() {
   return r.json();
 }
 
+const msMision = { m1: null, m2: null, m3: null };   // lo que tardó este dispositivo en cada misión
+
 async function registrarCompletado(mision) {
   if (PRUEBA) {
     const d = leerPrueba();
@@ -558,7 +599,7 @@ async function registrarCompletado(mision) {
   const r = await fetch('/api/completar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mision, id: ID })
+    body: JSON.stringify({ mision, id: ID, ms: msMision[mision] })
   });
   if (!r.ok) throw new Error('completar');
 }
@@ -572,6 +613,7 @@ async function sincronizar() {
   try {
     estado = await obtenerEstado();
     if (estado.requeridos) REQ = estado.requeridos;
+    await reponerNombre();
     for (const m of ['m1', 'm2', 'm3']) {
       if (!pendiente[m]) continue;
       if (estado.yo[m]) { pendiente[m] = false; continue; }
@@ -585,10 +627,12 @@ async function sincronizar() {
     conexion(false);
   }
   pintarTodo();
+  if (HOST && !PRUEBA) cargarDetalle();
 }
 
 async function terminar(m) {
   tiempos[m].fin = Date.now();
+  msMision[m] = tiempos[m].ini ? tiempos[m].fin - tiempos[m].ini : null;
   pendiente[m] = true;
   await sincronizar();
 }
@@ -596,7 +640,50 @@ async function terminar(m) {
 function conexion(ok) {
   $('#conexion').textContent = PRUEBA
     ? '● Modo prueba: datos guardados en este navegador'
-    : (ok ? '● Conectado' : '● Sin conexión, reintentando…');
+    : (ok ? '● Conectado' : '● Sin conexión, reintentando…') + (!HOST && nombreLocal ? ' · ' + nombreLocal : '');
+}
+
+/* ============ Nombre de agente ============ */
+let nombreLocal = '';
+try { nombreLocal = localStorage.getItem('bic_nombre') || ''; } catch (e) {}
+
+async function enviarNombre(nombre) {
+  const r = await fetch('/api/unirse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: ID, nombre })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error || 'error'), { codigo: r.status });
+  return j;
+}
+
+// Si el servidor no conoce este dispositivo (p. ej. se reinició), vuelve a registrar el nombre guardado
+async function reponerNombre() {
+  if (HOST || PRUEBA || !nombreLocal || estado.nombre) return;
+  try { estado = await enviarNombre(nombreLocal); }
+  catch (e) {
+    if (e.codigo === 409) {   // otro agente tomó el nombre mientras tanto
+      nombreLocal = '';
+      try { localStorage.removeItem('bic_nombre'); } catch (x) {}
+      ir('sNombre');
+      msg($('#msgNombre'), 'Ese nombre ya lo tomó otro agente. Elige otro.', 'aviso');
+    }
+  }
+}
+
+async function registrarNombre() {
+  const el = $('#msgNombre');
+  const nombre = $('#inpNombre').value.replace(/\s+/g, ' ').trim();
+  if (nombre.length < 2) return msg(el, 'Tu nombre en clave necesita al menos 2 letras.', 'aviso');
+  if (!PRUEBA) {
+    try { await enviarNombre(nombre); }
+    catch (e) { return msg(el, e.codigo === 409 ? 'Ese nombre ya lo tiene otro agente. Elige otro.' : (e.codigo === 400 ? 'Usa solo letras, números y espacios (2 a 20).' : 'No hay conexión, reintenta.'), 'error'); }
+  }
+  nombreLocal = nombre;
+  try { localStorage.setItem('bic_nombre', nombre); } catch (e) {}
+  conexion(true);
+  ir('sIntro');
 }
 
 function msg(el, texto, tipo) {
@@ -605,7 +692,7 @@ function msg(el, texto, tipo) {
 }
 
 /* ============ Navegación (jugador) ============ */
-const PANTALLAS = ['sIntro', 'sMapa', 'sM1', 'sM2', 'sM3', 'sFinal'];
+const PANTALLAS = ['sNombre', 'sIntro', 'sMapa', 'sM1', 'sM2', 'sM3', 'sFinal'];
 function ir(id) {
   if (id === 'sM2' && estado.m1 < REQ) return;
   if (id === 'sM3' && estado.m2 < REQ) return;
@@ -1417,16 +1504,16 @@ async function alternarMusica() {
   pintarBtnMusica();
 }
 function iniciarMusica() {
+  if (!HOST) return;   // los celulares no tienen música: estamos todos en la misma sala
+  musica.src = 'musica/agente-007.mp3';
+  $('#btnMusica').hidden = false;
   $('#btnMusica').addEventListener('click', alternarMusica);
   musica.addEventListener('play', pintarBtnMusica);
   musica.addEventListener('pause', pintarBtnMusica);
-  // En el proyector suena desde el primer clic (los navegadores no permiten autoplay);
-  // en los celulares queda en silencio para no armar un coro de 20 teléfonos.
-  if (HOST) {
-    musica.play().catch(() => {
-      document.addEventListener('pointerdown', () => { if (musica.paused) musica.play().catch(() => {}); }, { once: true });
-    });
-  }
+  // Suena desde el primer clic (los navegadores no permiten autoplay)
+  musica.play().catch(() => {
+    document.addEventListener('pointerdown', () => { if (musica.paused) musica.play().catch(() => {}); }, { once: true });
+  });
 }
 
 /* ============ Administración del proyector ============ */
@@ -1458,6 +1545,108 @@ function iniciarAdmin(clave) {
       msg($('#msgAdmin'), 'No se pudo reiniciar: ' + e.message, 'error');
     }
   });
+}
+
+/* ============ Ranking y jugadores en el proyector ============ */
+const TITULOS_M = { m1: '🔐 Misión 1 · Cerradura', m2: '🕵️ Misión 2 · Rastro digital', m3: '🧩 Misión 3 · Agentes encubiertos' };
+let hostMisionSel = null;   // null = sigue sola a la misión en curso
+let detalleDatos = null;
+
+function fmtTiempo(ms) {
+  if (ms == null) return '—';
+  const s = ms / 1000;
+  if (s < 60) return s.toFixed(1) + ' s';
+  return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+}
+
+async function cargarDetalle() {
+  try {
+    const r = await fetch('/api/detalle', { cache: 'no-store' });
+    if (r.ok) detalleDatos = await r.json();
+  } catch (e) { /* se reintenta en la próxima sincronización */ }
+  pintarDetalle();
+  pintarPodio();
+}
+
+function pintarPodio() {
+  const p = detalleDatos && detalleDatos.podio || [];
+  $('#podio').hidden = !p.length;
+  const ol = $('#podioLista');
+  ol.textContent = '';
+  p.forEach((x, i) => {
+    const li = document.createElement('li');
+    const a = document.createElement('span');
+    a.textContent = ['🥇', '🥈', '🥉'][i] + ' ' + x.nombre;
+    const t = document.createElement('span');
+    t.className = 't';
+    t.textContent = fmtTiempo(x.ms);
+    li.append(a, t);
+    ol.appendChild(li);
+  });
+}
+
+function misionEnCurso() {
+  return estado.m1 < REQ ? 'm1' : (estado.m2 < REQ ? 'm2' : 'm3');
+}
+
+function pintarDetalle() {
+  if (!HOST) return;
+  const m = hostMisionSel || misionEnCurso();
+  $$('.host-m').forEach(c => c.classList.toggle('sel', c.dataset.m === m));
+  $('#detTitulo').textContent = TITULOS_M[m];
+  const rank = $('#detRanking'), jug = $('#detJugando');
+  rank.textContent = '';
+  jug.textContent = '';
+  const d = detalleDatos && detalleDatos.misiones && detalleDatos.misiones[m];
+  if (!d) {
+    const p = document.createElement('p');
+    p.className = 'vacio';
+    p.textContent = PRUEBA ? 'El ranking solo funciona con el servidor.' : 'Cargando…';
+    rank.appendChild(p);
+    return;
+  }
+  const medallas = ['🥇', '🥈', '🥉'];
+  d.ranking.slice(0, 8).forEach((x, i) => {
+    const li = document.createElement('li');
+    const a = document.createElement('span');
+    a.textContent = (medallas[i] || (i + 1) + '.') + ' ' + x.nombre;
+    const t = document.createElement('span');
+    t.className = 't';
+    t.textContent = fmtTiempo(x.ms);
+    li.append(a, t);
+    rank.appendChild(li);
+  });
+  if (!d.ranking.length) {
+    const p = document.createElement('p');
+    p.className = 'vacio';
+    p.textContent = 'Nadie ha terminado todavía.';
+    rank.appendChild(p);
+  }
+  d.jugando.slice(0, 14).forEach(x => {
+    const s = document.createElement('span');
+    s.textContent = (x.enLinea ? '🟢 ' : '⚪ ') + x.nombre;
+    jug.appendChild(s);
+  });
+  if (d.jugando.length > 14) {
+    const s = document.createElement('span');
+    s.textContent = '+' + (d.jugando.length - 14) + ' más';
+    jug.appendChild(s);
+  }
+  if (!d.jugando.length) {
+    const p = document.createElement('p');
+    p.className = 'vacio';
+    p.textContent = 'Nadie más en esta misión.';
+    jug.appendChild(p);
+  }
+}
+
+function iniciarDetalleHost() {
+  $$('.host-m').forEach(c => {
+    const elegir = () => { hostMisionSel = c.dataset.m; pintarDetalle(); };
+    c.addEventListener('click', elegir);
+    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(); } });
+  });
+  pintarDetalle();
 }
 
 /* ============ Bienvenida del proyector ============ */
@@ -1545,11 +1734,14 @@ function iniciar() {
     $('#vistaJugador').hidden = true;
     $('#vistaHost').hidden = false;
     prepararBienvenida();
+    iniciarDetalleHost();
     generarQR();
     const claveAdmin = new URLSearchParams(location.search).get('clave');
     if (claveAdmin && !PRUEBA) iniciarAdmin(claveAdmin);
   } else {
-    ir('sIntro');
+    $('#btnNombre').addEventListener('click', registrarNombre);
+    $('#inpNombre').addEventListener('keydown', e => { if (e.key === 'Enter') registrarNombre(); });
+    ir(nombreLocal ? 'sIntro' : 'sNombre');
   }
 
   sincronizar();

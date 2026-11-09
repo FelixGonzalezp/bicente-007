@@ -34,12 +34,22 @@ const TIPOS = {
 };
 
 /* ---------- Estado (en memoria, con copia en disco "mejor esfuerzo") ---------- */
-const estado = { m1: new Set(), m2: new Set(), m3: new Set() };
+// Por misión: id de dispositivo -> { ms: tiempo que tardó, ts: cuándo terminó }
+const estado = { m1: new Map(), m2: new Map(), m3: new Map() };
+const nombres = new Map();   // id -> nombre de agente
+const vistos = new Map();    // id -> última vez que el celular consultó (no se guarda en disco)
+const EN_LINEA_MS = 15000;
+const NOMBRE_VALIDO = /^[\p{L}\p{N} ._'-]+$/u;
 
 function cargar() {
   try {
     const d = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    MISIONES.forEach(m => (d[m] || []).forEach(id => estado[m].add(id)));
+    MISIONES.forEach(m => {
+      const v = d[m] || {};
+      if (Array.isArray(v)) v.forEach(id => estado[m].set(id, { ms: null, ts: 0 }));   // formato antiguo
+      else Object.keys(v).forEach(id => estado[m].set(id, v[id]));
+    });
+    Object.keys(d.nombres || {}).forEach(id => nombres.set(id, d.nombres[id]));
     console.log('Estado recuperado desde', DATA_FILE);
   } catch (e) { /* primera ejecución o disco efímero */ }
 }
@@ -51,21 +61,63 @@ function guardar() {
     try {
       fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
       const tmp = DATA_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify({ m1: [...estado.m1], m2: [...estado.m2], m3: [...estado.m3] }));
+      const salida = { nombres: Object.fromEntries(nombres) };
+      MISIONES.forEach(m => { salida[m] = Object.fromEntries(estado[m]); });
+      fs.writeFileSync(tmp, JSON.stringify(salida));
       fs.renameSync(tmp, DATA_FILE);
     } catch (e) { /* el disco puede ser de solo lectura: no es crítico */ }
   }, 500);
 }
 
+function limpiarNombre(n) {
+  if (typeof n !== 'string') return null;
+  const s = n.normalize('NFC').replace(/\s+/g, ' ').trim();
+  if (s.length < 2 || s.length > 20 || !NOMBRE_VALIDO.test(s)) return null;
+  return s;
+}
+
 function resumen(id) {
+  const valido = id && ID_VALIDO.test(id);
   const r = {
     m1: estado.m1.size, m2: estado.m2.size, m3: estado.m3.size,
     requeridos: REQUERIDOS,
-    yo: { m1: false, m2: false, m3: false }
+    yo: { m1: false, m2: false, m3: false },
+    nombre: valido ? (nombres.get(id) || null) : null
   };
-  if (id && ID_VALIDO.test(id)) MISIONES.forEach(m => { r.yo[m] = estado[m].has(id); });
+  if (valido) MISIONES.forEach(m => { r.yo[m] = estado[m].has(id); });
   if (estado.m3.size >= REQUERIDOS) r.clave = CLAVE_FINAL;   // la clave solo se entrega con la bóveda abierta
   return r;
+}
+
+// Detalle para el panel del proyector: ranking de cada misión y quiénes siguen jugando
+function detalle() {
+  const ahora = Date.now();
+  const ids = new Set(nombres.keys());
+  MISIONES.forEach(m => estado[m].forEach((_, id) => ids.add(id)));
+  const etiqueta = id => nombres.get(id) || 'Agente anónimo';
+  const enLinea = id => ahora - (vistos.get(id) || 0) < EN_LINEA_MS;
+  const misiones = {};
+  MISIONES.forEach((m, i) => {
+    const previa = i > 0 ? estado[MISIONES[i - 1]] : null;
+    const ranking = [...estado[m]]
+      .sort((x, y) => (x[1].ms == null) - (y[1].ms == null) || (x[1].ms - y[1].ms) || (x[1].ts - y[1].ts))
+      .map(([id, v]) => ({ nombre: etiqueta(id), ms: v.ms }));
+    const jugando = [...ids]
+      .filter(id => !estado[m].has(id) && (!previa || previa.has(id)))
+      .map(id => ({ nombre: etiqueta(id), enLinea: enLinea(id) }))
+      .sort((x, y) => y.enLinea - x.enLinea || x.nombre.localeCompare(y.nombre, 'es'));
+    misiones[m] = { ranking, jugando };
+  });
+  // Podio general: quienes completaron las tres misiones, por tiempo total (sin tiempo válido, al final)
+  const podio = [...ids]
+    .filter(id => MISIONES.every(m => estado[m].has(id)))
+    .map(id => {
+      const ts = MISIONES.map(m => estado[m].get(id).ms);
+      return { nombre: etiqueta(id), ms: ts.every(t => t != null) ? ts.reduce((a, b) => a + b, 0) : null };
+    })
+    .sort((x, y) => (x.ms == null) - (y.ms == null) || (x.ms - y.ms))
+    .slice(0, 3);
+  return { requeridos: REQUERIDOS, agentes: ids.size, enLinea: [...ids].filter(enLinea).length, misiones, podio };
 }
 
 /* ---------- Utilidades HTTP ---------- */
@@ -120,7 +172,30 @@ function mismaClave(a, b) {
 /* ---------- API ---------- */
 async function api(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/estado') {
-    return json(res, 200, resumen(url.searchParams.get('id')));
+    const id = url.searchParams.get('id');
+    if (id && ID_VALIDO.test(id)) vistos.set(id, Date.now());
+    return json(res, 200, resumen(id));
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/detalle') {
+    return json(res, 200, detalle());
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/unirse') {
+    let b;
+    try { b = await leerCuerpo(req); } catch (e) { return errorCuerpo(req, res, e); }
+    if (typeof b.id !== 'string' || !ID_VALIDO.test(b.id)) return json(res, 400, { error: 'id inválido' });
+    const nombre = limpiarNombre(b.nombre);
+    if (!nombre) return json(res, 400, { error: 'nombre inválido (2 a 20 letras o números)' });
+    const clave = nombre.toLocaleLowerCase('es');
+    for (const [otro, n] of nombres) {
+      if (otro !== b.id && n.toLocaleLowerCase('es') === clave) return json(res, 409, { error: 'ese nombre ya está en uso' });
+    }
+    if (!nombres.has(b.id) && nombres.size >= MAX_AGENTES) return json(res, 429, { error: 'límite alcanzado' });
+    nombres.set(b.id, nombre);
+    vistos.set(b.id, Date.now());
+    guardar();
+    return json(res, 200, resumen(b.id));
   }
 
   if (req.method === 'POST' && url.pathname === '/api/completar') {
@@ -132,7 +207,8 @@ async function api(req, res, url) {
     if (i > 0 && estado[MISIONES[i - 1]].size < REQUERIDOS) return json(res, 409, { error: 'misión bloqueada' });
     if (!estado[b.mision].has(b.id)) {
       if (estado[b.mision].size >= MAX_AGENTES) return json(res, 429, { error: 'límite alcanzado' });
-      estado[b.mision].add(b.id);
+      const ms = Number.isFinite(b.ms) && b.ms > 0 ? Math.min(Math.round(b.ms), 3600000) : null;   // inválido = sin tiempo (va al final)
+      estado[b.mision].set(b.id, { ms, ts: Date.now() });
       guardar();
       console.log(`✔ ${b.mision} completada (${estado[b.mision].size}/${REQUERIDOS})`);
     }
@@ -145,6 +221,8 @@ async function api(req, res, url) {
     if (!ADMIN_KEY) return json(res, 403, { error: 'ADMIN_KEY no está configurada en el servidor' });
     if (!mismaClave(b.clave || '', ADMIN_KEY)) return json(res, 403, { error: 'clave incorrecta' });
     MISIONES.forEach(m => estado[m].clear());
+    nombres.clear();
+    vistos.clear();
     guardar();
     console.log('↺ Partida reiniciada');
     return json(res, 200, resumen(null));

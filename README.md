@@ -22,7 +22,8 @@ Los jugadores entran **escaneando un QR** que aparece en el proyector; no necesi
 Recomendaciones:
 
 - **Abre el proyector 10 minutos antes.** En el plan gratuito de Render el servicio se "duerme" tras un rato sin visitas y la primera carga puede tardar cerca de 1 minuto.
-- Pon el navegador en pantalla completa (`F11`) y **haz un clic en la pantalla** para activar la música (los navegadores no permiten audio automático). En los celulares la música queda en silencio por defecto (botón 🔇/🔊 arriba a la derecha).
+- Pon el navegador en pantalla completa (`F11`) y **haz un clic en la pantalla** para activar la música (los navegadores no permiten audio automático). **La música es solo del proyector**: los celulares no la descargan ni tienen botón de sonido.
+- **Nombre de agente:** al entrar, cada jugador elige un nombre en clave (2 a 20 caracteres, único). En el proyector, toca una misión para ver su **ranking de los más rápidos** y quiénes siguen jugando (🟢 conectado, ⚪ sin conexión reciente).
 - **El proyector abre con la bienvenida**: cuenta la historia con esa pantalla de fondo y pulsa **Iniciar misión** cuando quieras que aparezca el QR. Si recargas el proyector en plena partida, no vuelve a la bienvenida.
 - Para **repetir la dinámica** (o limpiar una prueba) usa el reinicio: ver más abajo. Si quedó avance de una prueba anterior y no reinicias, el proyector lo mostrará al pasar de la bienvenida.
 
@@ -139,7 +140,9 @@ docker run -d -p 3000:3000 -e CLAVE_FINAL=MI-CLAVE -e ADMIN_KEY=MI-ADMIN --name 
 
 - **El avance vive en memoria.** En el plan gratuito de Render el disco es efímero: si el servicio se reinicia o se duerme, el avance se pierde. Para una dinámica de 10 minutos con el servicio ya despierto no es un problema.
 - **Cada dispositivo cuenta una vez**, identificado por un código anónimo guardado en su navegador. Alguien podría contar más de una vez si borra los datos del navegador o usa otro. No hay autenticación: es un juego de sala, no un sistema de seguridad.
-- **No se recogen datos personales:** el servidor solo guarda ese código anónimo y qué misiones completó.
+- **Datos que se guardan:** el código anónimo del dispositivo, el nombre en clave que elige cada jugador, qué misiones completó y cuánto tardó. Se piden alias (no nombres reales ni RUT) y se borran con el reinicio.
+- **El ranking no es a prueba de trampas:** el tiempo lo mide y envía cada celular. Es para competir en sala, no para premios con valor.
+- Si un jugador recarga el celular en plena misión, su tiempo de esa misión se pierde y queda al final del ranking.
 - **Requiere internet en el proyector y en los celulares.** El código QR (`cdnjs.cloudflare.com`) y la tipografía pixel de la bóveda (`fonts.googleapis.com`) se cargan desde internet; si fallara la tipografía, se usa una de respaldo, pero sin la librería del QR no se dibuja el código (se muestra la dirección para entrar a mano).
 - La canción pesa unos 4,7 MB y cada celular que active el sonido la descarga.
 
@@ -164,7 +167,9 @@ docker run -d -p 3000:3000 -e CLAVE_FINAL=MI-CLAVE -e ADMIN_KEY=MI-ADMIN --name 
 ### API (por si necesitas depurar)
 
 - `GET /api/estado?id=<id>` → avance de cada misión (`m1`, `m2`, `m3`) y si ese dispositivo ya completó cada una.
-- `POST /api/completar` `{ "mision": "m1", "id": "<id>" }` → registra una misión completada (rechaza con `409` si aún está bloqueada).
+- `POST /api/unirse` `{ "id": "<id>", "nombre": "<alias>" }` → registra el nombre de agente (`409` si ya está en uso).
+- `GET /api/detalle` → ranking y jugadores por misión (lo usa el proyector).
+- `POST /api/completar` `{ "mision": "m1", "id": "<id>", "ms": 42300 }` → registra una misión completada (rechaza con `409` si aún está bloqueada).
 - `POST /api/reiniciar` `{ "clave": "<ADMIN_KEY>" }` → borra el avance.
 - `GET /healthz` → comprobación de salud para Render.
 
