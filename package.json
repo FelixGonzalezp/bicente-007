@@ -1,0 +1,14 @@
+{
+  "name": "bicente-007-mision-datos",
+  "version": "1.0.0",
+  "description": "Dinámica Bicente 007: tres misiones cooperativas por celular para abrir la bóveda y recuperar los datos",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

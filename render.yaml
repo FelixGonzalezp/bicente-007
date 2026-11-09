@@ -1,0 +1,15 @@
+# Opcional: "Blueprint" de Render. Permite crear el servicio con New + > Blueprint.
+# Si prefieres el formulario manual, ignora este archivo (ver README.md).
+services:
+  - type: web
+    name: bicente-007
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: ADMIN_KEY        # clave para reiniciar la partida desde el proyector
+        generateValue: true
+      - key: CLAVE_FINAL      # clave que se muestra en el proyector al abrirse la bóveda
+        sync: false

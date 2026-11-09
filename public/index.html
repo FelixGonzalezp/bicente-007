@@ -1,0 +1,1564 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Misión Bicente: Recuperar los Datos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0f1f;--panel:#141b36;--panel2:#1b2447;--borde:#2a3766;
+    --gold:#f5c542;--gold2:#d9a526;--gold-soft:#ffe9a3;
+    --text:#f4f1e8;--muted:#9aa5cc;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{
+    margin:0;min-height:100vh;color:var(--text);background-color:var(--bg);
+    background-image:radial-gradient(1200px 600px at 50% -10%,#24306a 0%,var(--bg) 60%);
+    background-attachment:fixed;
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+  .wrap.ancha{max-width:1100px}
+  .hero{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+  .hero img{width:96px;height:96px;object-fit:cover;object-position:50% 25%;border-radius:50%;border:2px solid var(--gold);flex:none;background:#000}
+  h1{margin:0;font-size:1.35rem;color:var(--gold-soft);letter-spacing:.02em}
+  h2{margin:0 0 6px;font-size:1.1rem;color:var(--gold-soft)}
+  p{margin:6px 0}
+  .sub{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+  .pequeno{font-size:.88rem;color:var(--muted)}
+  .tarjeta{background:var(--panel);border:1px solid var(--borde);border-radius:16px;padding:18px;margin-bottom:14px}
+  .centro{text-align:center}
+  .btn{appearance:none;border:0;border-radius:12px;padding:12px 18px;min-height:44px;font:inherit;font-weight:700;cursor:pointer;background:linear-gradient(180deg,var(--gold),var(--gold2));color:#1a1405}
+  .btn.sec{background:var(--panel2);color:var(--text);border:1px solid #33407a}
+  .btn.block{width:100%}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .badge{display:inline-block;font-size:.75rem;background:#3b2a05;color:var(--warn);border:1px solid var(--warn);padding:2px 10px;border-radius:999px;margin-bottom:10px}
+  .cabecera{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+  .tiempo{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
+  .mapa{display:grid;gap:12px}
+  .mision{width:100%;text-align:left;background:var(--panel);border:1px solid var(--borde);color:var(--text);border-radius:16px;padding:16px;cursor:pointer;font:inherit}
+  .mision:disabled{opacity:.5;cursor:not-allowed}
+  .mision.hecha{border-color:var(--ok)}
+  .mision .titulo{display:block;font-weight:700;font-size:1.05rem}
+  .mision .estado{display:block;margin-top:4px;color:var(--muted);font-size:.9rem}
+  .sudoku{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:320px;margin:0 auto}
+  .caja{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#33407a;padding:2px;border-radius:10px}
+  .celda{
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:0;
+    border:0;border-radius:6px;background:var(--panel2);color:var(--text);
+    font:700 1.5rem/1 system-ui,sans-serif;cursor:pointer;
+  }
+  .celda.fija{color:var(--gold-soft);background:#202a57;cursor:default}
+  .celda.sel{outline:3px solid var(--gold);outline-offset:-3px}
+  .celda.error{color:var(--bad)}
+  .pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:360px;margin:14px auto 0}
+  .pad .btn{padding:10px 0;font-size:1.1rem}
+  .msg{min-height:1.5em;margin:12px 0;text-align:center;font-weight:600}
+  .msg.aviso{color:var(--warn)}
+  .msg.error{color:var(--bad)}
+  .msg.ok{color:var(--ok)}
+  .sopa{
+    display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-width:420px;margin:0 auto;
+    user-select:none;-webkit-user-select:none;touch-action:none;
+  }
+  .sopa .celda{font-size:1.35rem;border-radius:6px;cursor:pointer}
+  .sopa .celda.sel{background:#3d4f8f;outline:none}
+  .sopa .celda.hallada{background:rgba(74,222,128,.22);color:var(--ok)}
+  .palabras{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+  .chip{padding:4px 12px;border-radius:999px;border:1px solid #33407a;background:var(--panel2);font-weight:700;letter-spacing:.05em}
+  .chip.ok{background:rgba(74,222,128,.2);border-color:var(--ok);color:var(--ok);text-decoration:line-through}
+  .barra{height:12px;background:#0d1330;border-radius:999px;overflow:hidden;margin:10px 0 4px}
+  .barra>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .6s}
+  .host-grid{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:24px;align-items:start}
+  @media (max-width:760px){.host-grid{grid-template-columns:1fr}}
+  .qr{background:#fff;padding:14px;border-radius:16px;display:inline-block;max-width:100%}
+  .qr svg{display:block;width:280px;max-width:100%;height:auto}
+  .destacado{font-size:1.1rem;font-weight:700;text-align:center;border-color:var(--gold)}
+  .revelacion{text-align:center;border-color:var(--gold)}
+  .revelacion strong{font-size:1.4rem;color:var(--gold-soft);letter-spacing:.06em}
+  .pie{text-align:center;margin-top:18px}
+  .fila-botones{display:flex;flex-wrap:wrap;gap:8px}
+  .fila-botones .btn{flex:1 1 auto}
+
+  /* ---------- Pantalla de inicio estilo 007 ---------- */
+  .wrap.en-intro{max-width:760px}
+  .intro{text-align:center;padding-top:4px}
+  .top-secret{
+    display:inline-block;transform:rotate(-3deg);margin:4px 0 18px;padding:4px 16px;
+    border:3px solid var(--bad);color:var(--bad);border-radius:6px;
+    font:900 .95rem/1.2 system-ui,sans-serif;letter-spacing:.3em;text-transform:uppercase;
+    animation:parpadeo 2.4s infinite;
+  }
+  .iris{
+    position:relative;width:min(54vw,260px);aspect-ratio:1;margin:0 auto 18px;border-radius:50%;
+    padding:8px;background:conic-gradient(from 0deg,var(--gold),#6b4e0a,var(--gold-soft),#6b4e0a,var(--gold));
+    box-shadow:0 0 0 6px #0b0f1f,0 0 60px 8px rgba(245,197,66,.45);
+    animation:abrir-iris 1.1s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .iris img{width:100%;height:100%;object-fit:cover;object-position:50% 28%;border-radius:50%;display:block;border:4px solid #0b0f1f}
+  .titulo007{
+    margin:0;font-size:clamp(2.4rem,12vw,4.2rem);font-weight:900;line-height:1;letter-spacing:.06em;text-transform:uppercase;
+    background:linear-gradient(180deg,#fff6cf,var(--gold) 55%,#a87a12);-webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 30px rgba(245,197,66,.25);
+  }
+  .titulo007 .num{display:inline-block;font-size:1.25em;letter-spacing:.02em;margin-left:.08em;font-style:italic}
+  .lema{margin:10px 0 22px;font-size:clamp(1rem,4.2vw,1.35rem);letter-spacing:.28em;text-transform:uppercase;color:var(--gold-soft)}
+  .expediente{
+    position:relative;text-align:left;margin:0 auto 22px;padding:22px 22px 18px;border-radius:14px;
+    background:linear-gradient(180deg,#171f3f,#10162e);border:1px solid var(--gold);
+    box-shadow:inset 0 0 0 4px #0b0f1f,inset 0 0 0 5px rgba(245,197,66,.35);
+  }
+  .expediente .sello{margin:0 0 10px;font-weight:900;letter-spacing:.22em;font-size:.85rem;color:var(--gold)}
+  .expediente p{font-size:1.2rem;line-height:1.6;margin:0 0 14px}
+  .expediente h3{margin:18px 0 10px;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .expediente ul{list-style:none;margin:0 0 6px;padding:0;display:grid;gap:10px}
+  .expediente li{padding:12px 16px;border-radius:10px;background:rgba(245,197,66,.08);border:1px solid rgba(245,197,66,.25);font-weight:700;font-size:1.15rem}
+  .expediente li span{display:block;margin-top:2px;font-weight:400;font-size:1.02rem;line-height:1.5;color:var(--text);opacity:.85}
+  .expediente .firma{margin:16px 0 0;text-align:right;font-style:italic;color:var(--gold-soft);font-size:1.1rem}
+  .btn.grande{
+    font-size:1.25rem;letter-spacing:.08em;text-transform:uppercase;padding:18px 24px;min-height:62px;border-radius:14px;
+    box-shadow:0 0 0 0 rgba(245,197,66,.6);animation:pulso 1.8s infinite;
+  }
+  .btn-musica{
+    position:fixed;top:12px;right:12px;z-index:10;width:44px;height:44px;border-radius:50%;
+    border:1px solid var(--gold);background:rgba(11,15,31,.85);color:var(--text);font-size:1.2rem;cursor:pointer;
+  }
+  .autodestruye{margin-top:14px;font-size:.85rem;color:var(--muted);letter-spacing:.06em}
+
+  /* Encabezado grande del proyector */
+  .hero.grande{gap:24px;margin-bottom:22px}
+  .hero.grande img{width:150px;height:150px;border-width:4px;box-shadow:0 0 40px rgba(245,197,66,.4)}
+  .hero.grande h1{font-size:clamp(1.8rem,5vw,3rem);font-weight:900;letter-spacing:.05em;text-transform:uppercase}
+  .hero.grande .sub{font-size:1.1rem}
+
+  /* Pantallas anchas: imagen a la izquierda, expediente a la derecha, sin scroll */
+  @media (min-width:900px){
+    .wrap.en-intro{max-width:1280px}
+    .intro{display:grid;grid-template-columns:5fr 7fr;gap:44px;align-items:center;min-height:calc(100vh - 90px);padding-top:0}
+    .intro .iris{width:min(30vw,400px);margin-bottom:22px}
+    .intro-der .expediente{margin:0 0 16px;padding:18px 22px 14px}
+    .intro-der .expediente p{font-size:1.05rem;line-height:1.5;margin-bottom:10px}
+    .intro-der .expediente h3{margin:12px 0 8px}
+    .intro-der .expediente li{font-size:1.05rem;padding:8px 14px}
+    .intro-der .expediente .firma{margin-top:10px;font-size:1rem}
+    .intro-der .autodestruye{margin-top:10px}
+  }
+  @media (min-width:900px) and (max-height:900px){
+    .intro .iris{width:min(26vw,330px);margin-bottom:14px}
+    .intro .top-secret{margin-bottom:12px}
+    .intro .lema{margin:8px 0 0}
+    .intro-der .expediente{padding:14px 20px 12px;margin-bottom:12px}
+    .intro-der .expediente p{font-size:.98rem;line-height:1.45;margin-bottom:8px}
+    .intro-der .expediente h3{margin:8px 0 6px}
+    .intro-der .expediente li{font-size:1rem;padding:6px 12px}
+    .intro-der .btn.grande{min-height:54px;padding:12px 24px}
+  }
+  @media (min-width:900px) and (max-height:820px){
+    .intro .iris{width:min(26vw,300px)}
+    .intro-der .expediente p{font-size:.95rem;margin-bottom:8px}
+    .intro-der .expediente li{font-size:.98rem;padding:6px 12px}
+    .intro-der .btn.grande{min-height:52px;padding:12px 24px}
+  }
+  @media (min-width:900px) and (max-height:720px){
+    .intro-der .expediente h3,.intro-der .expediente li span,.intro-der .autodestruye{display:none}
+    .intro-der .expediente p{font-size:.9rem;line-height:1.4;margin-bottom:6px}
+    .intro-der .expediente li{font-size:.95rem;padding:5px 10px}
+    .intro-der .expediente .firma{margin-top:6px;font-size:.9rem}
+    .intro .iris{width:min(22vw,250px)}
+  }
+  @keyframes parpadeo{0%,100%{opacity:1}50%{opacity:.55}}
+  @keyframes abrir-iris{from{clip-path:circle(0% at 50% 50%);transform:scale(.8)}to{clip-path:circle(75% at 50% 50%);transform:scale(1)}}
+  @keyframes pulso{0%{box-shadow:0 0 0 0 rgba(245,197,66,.6)}70%{box-shadow:0 0 0 18px rgba(245,197,66,0)}100%{box-shadow:0 0 0 0 rgba(245,197,66,0)}}
+  @media (prefers-reduced-motion:reduce){.top-secret,.iris,.btn.grande{animation:none}}
+
+  /* Bienvenida del proyector: más ancho y letra más grande en pantallas grandes */
+  @media (min-width:1500px){
+    #vistaHost.en-intro{max-width:1640px}
+  }
+  @media (min-width:1500px) and (min-height:1000px){
+    #hostBienvenida .iris{width:min(26vw,460px)}
+    #hostBienvenida .intro-der .expediente p{font-size:1.2rem}
+    #hostBienvenida .intro-der .expediente li{font-size:1.2rem;padding:10px 16px}
+    #hostBienvenida .intro-der .expediente li span{font-size:1.1rem}
+    #hostBienvenida .intro-der .expediente h3{font-size:1.1rem}
+  }
+
+  /* ---------- Misión 3: crucigrama ---------- */
+  .cruci{display:grid;grid-template-columns:repeat(11,1fr);gap:2px;max-width:560px;margin:0 auto}
+  .cc{
+    position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:3px;
+    background:#f4f1e8;color:#12141f;font:800 clamp(.8rem,3.6vw,1.25rem)/1 system-ui,sans-serif;
+    cursor:pointer;user-select:none;-webkit-user-select:none;
+  }
+  .cc.vacia{background:transparent;pointer-events:none}
+  .cc.activa{background:#ffe9a3}
+  .cc.sel{background:var(--gold);box-shadow:inset 0 0 0 2px #1a1405}
+  .cc.error{background:#ffd0d0;color:#b3141b}
+  .cc.ok{background:#bdf3cf;color:#0b3d1d}
+  .cc .num{position:absolute;top:1px;left:3px;font-size:.5rem;font-weight:700;color:#4a4f66}
+  .pista-activa{min-height:3.2em;margin:0 0 12px;padding:10px 14px;border:1px solid var(--gold);border-radius:12px;background:var(--panel2);font-weight:600}
+  .pistas{display:grid;gap:8px;margin:14px 0}
+  .pista{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid #33407a;background:var(--panel2);color:var(--text);font:inherit;cursor:pointer}
+  .pista.activa{border-color:var(--gold);background:#242e5c}
+  .pista .n{flex:none;font-weight:800;color:var(--gold)}
+  .pista .len{color:var(--muted);font-size:.85rem}
+  .teclado{display:grid;gap:6px;max-width:520px;margin:12px auto 0}
+  .teclado .fila{display:flex;gap:4px;justify-content:center}
+  .tecla{flex:1 1 0;max-width:44px;min-height:46px;padding:0;border:1px solid #33407a;border-radius:8px;background:var(--panel2);color:var(--text);font:700 1rem system-ui,sans-serif;cursor:pointer}
+  .tecla.ancha{max-width:68px}
+
+  /* ---------- Bóveda en pixel art ---------- */
+  .bv-wrap{max-width:760px;margin:0 auto;text-align:center}
+  .bv{position:relative;width:100%;perspective:900px;background:#10142a;border:3px solid var(--gold);border-radius:14px;overflow:hidden;box-shadow:0 0 40px rgba(245,197,66,.25)}
+  .bv canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+  .bv .bv-puerta{position:absolute;inset:0;transform-origin:21.875% 50%;transition:transform 1.9s cubic-bezier(.55,0,.25,1) 1.6s;backface-visibility:hidden}
+  .bv .bv-disco{position:absolute;inset:0}
+  .bv .bv-rueda{position:absolute;left:35%;top:30%;width:30%;height:auto;transition:transform 1.5s ease-in-out .2s}
+  .bv-luz{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,226,122,.2),transparent 62%);transition:opacity 1s 2.4s}
+  .bv-wrap.abierta .bv-puerta{transform:rotateY(-74deg)}
+  .bv-wrap.abierta .bv-rueda{transform:rotate(540deg)}
+  .bv-wrap.abierta .bv-luz{opacity:1;animation:luz-pulso 2.4s ease-in-out 3s infinite}
+  .bv-confeti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .bv-confeti i{position:absolute;top:-12px;width:8px;height:8px;opacity:0}
+  .bv-wrap.abierta .bv-confeti i{opacity:1;animation:caer var(--t) linear var(--d) infinite backwards}
+  .bv-texto{margin-top:18px;opacity:0;transition:opacity 1s 3.6s}
+  .bv-wrap.abierta .bv-texto{opacity:1}
+  .pixel{font-family:"Press Start 2P",ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;line-height:1.5}
+  .bv-texto h2.pixel{margin:0 0 12px;font-size:clamp(1rem,4.2vw,1.9rem);color:var(--gold-soft);text-shadow:3px 3px 0 #6b4e0a}
+  .bv-texto p{font-size:1.05rem}
+  .insignias{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:12px 0}
+  .insignias span{padding:8px 12px;border:3px solid var(--gold);background:#10142a;box-shadow:4px 4px 0 #000;font:.7rem/1.4 "Press Start 2P",ui-monospace,monospace;color:var(--ok)}
+  .clave-pixel{display:inline-block;margin-top:6px;padding:14px 20px;border:4px solid var(--gold);background:#10142a;box-shadow:6px 6px 0 #000;font:clamp(.8rem,3vw,1.3rem)/1.4 "Press Start 2P",ui-monospace,monospace;color:var(--gold-soft)}
+  /* Proyector: bóveda a la izquierda, mensaje y clave a la derecha (todo visible sin scroll) */
+  @media (min-width:900px){
+    #hostFinal .bv-wrap{max-width:1100px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:32px;align-items:center}
+    #hostFinal .bv-texto{margin-top:0}
+  }
+  @keyframes caer{from{top:-12px}to{top:104%}}
+  @keyframes luz-pulso{0%,100%{opacity:.55}50%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){
+    .bv .bv-puerta,.bv .bv-rueda,.bv-luz,.bv-texto{transition-duration:.01s;transition-delay:0s}
+    .bv-confeti i,.bv-wrap.abierta .bv-luz{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<audio id="musica" src="musica/agente-007.mp3" loop preload="auto"></audio>
+<button class="btn-musica" id="btnMusica" type="button" title="Música" aria-label="Activar o silenciar la música">🔇</button>
+
+<!-- ============ VISTA JUGADOR (celular) ============ -->
+<div id="vistaJugador" class="wrap">
+
+  <div class="hero" id="heroChico">
+    <img src="imagenes/image.png" alt="Agente Bicente, gato agente secreto de smoking">
+    <div>
+      <h1>Misión: Recuperar los Datos</h1>
+      <p class="sub">Operación Bóveda Gala · Agente Bicente</p>
+    </div>
+  </div>
+
+  <span class="badge" id="badgePrueba" hidden>MODO PRUEBA · datos solo en este navegador</span>
+
+  <!-- Intro -->
+  <section id="sIntro" class="intro" hidden>
+   <div class="intro-izq">
+    <div class="top-secret">Top secret · Solo para agentes</div>
+    <div class="iris">
+      <img src="imagenes/image.png" alt="Agente Bicente, gato agente secreto de smoking">
+    </div>
+    <h1 class="titulo007">Bicente <span class="num">007</span></h1>
+    <p class="lema">Licencia para recuperar datos</p>
+   </div>
+
+   <div class="intro-der">
+    <div class="expediente">
+      <p class="sello">▌EXPEDIENTE CONFIDENCIAL</p>
+      <p>🎩 <strong>Agente, soy Bicente.</strong> Anoche, en plena gala, los <em>Ransomwarriors</em> (ladrones informáticos de poca monta y menos estilo) se colaron por el buffet y se llevaron nuestros datos y nuestros modelos. Sí, también el modelo que nunca terminaba de entrenar. Eso ya es ensañamiento.</p>
+      <p>Como buen criminal, dejaron una nota de rescate. No piden dinero: piden que resolvamos tres acertijos. Evidentemente no saben con quién se meten: esta gerencia le gana a un sudoku sin café.</p>
+      <p>Pero hay una regla, y es sagrada: <strong>ningún agente trabaja solo</strong>. Cada prueba se abre solo cuando <strong>5 agentes</strong> completan la anterior. Si 4 terminan y uno se distrae con el celular, la bóveda espera. Presión social: la mejor tecnología de seguridad.</p>
+
+      <h3>Instrucciones de la misión</h3>
+      <ul>
+        <li>🔐 Misión 1 · Descifrar la cerradura</li>
+        <li>🕵️ Misión 2 · Rastrear el rastro digital</li>
+        <li>🧩 Misión 3 · Desenmascarar a los agentes</li>
+        <li>🏦 Bóveda · Recuperar los datos<span>Cuando 5 agentes completen las tres misiones, la bóveda se abre y la clave aparece en el proyector. Champaña opcional, aplausos obligatorios.</span></li>
+      </ul>
+
+      <p style="margin-top:14px">Tienen <strong>10 minutos</strong>. Antes de eso, los datos podrían estar en un buffet de ofertas en la dark web. Confío en ustedes. Un poco.</p>
+      <p class="firma">— Bicente 007, agente secreto (y gato, pero eso es confidencial)</p>
+    </div>
+
+    <button class="btn grande block" data-ir="sMapa">Aceptar la misión</button>
+    <p class="autodestruye">Este mensaje se autodestruirá en 10 minutos (máximo).</p>
+   </div>
+  </section>
+
+  <!-- Mapa de misiones -->
+  <section id="sMapa" hidden>
+    <div class="tarjeta">
+      <h2>Mapa de misiones</h2>
+      <p class="pequeno">Cada prueba la completa el equipo. Cuando 5 agentes terminen, se abre la siguiente.</p>
+    </div>
+    <div class="mapa">
+      <button class="mision" id="btnM1" data-ir="sM1">
+        <span class="titulo">🔐 Misión 1 · Descifrar la cerradura</span>
+        <span class="estado" id="estM1"></span>
+      </button>
+      <button class="mision" id="btnM2" data-ir="sM2">
+        <span class="titulo">🕵️ Misión 2 · Rastrear el rastro digital</span>
+        <span class="estado" id="estM2"></span>
+      </button>
+      <button class="mision" id="btnM3" data-ir="sM3">
+        <span class="titulo">🧩 Misión 3 · Desenmascarar a los agentes</span>
+        <span class="estado" id="estM3"></span>
+      </button>
+      <button class="mision" id="btnFinal" data-ir="sFinal">
+        <span class="titulo">🏦 Bóveda · Recuperar los datos</span>
+        <span class="estado" id="estFinal"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Misión 1: sudoku 4×4 -->
+  <section id="sM1" hidden>
+    <div class="cabecera">
+      <button class="btn sec" data-ir="sMapa">← Mapa</button>
+      <span class="tiempo" id="tiempoM1">⏱ 00:00</span>
+    </div>
+    <div class="tarjeta">
+      <h2>🔐 Misión 1 · Descifrar la cerradura</h2>
+      <p>Completa la cuadrícula con los números 1, 2, 3 y 4. Cada número aparece una sola vez por fila, por columna y por cuadrante de 2×2.</p>
+      <p class="pequeno" id="grupoM1"></p>
+    </div>
+    <div class="sudoku" id="sudoku"></div>
+    <div class="pad">
+      <button class="btn sec" data-num="1">1</button>
+      <button class="btn sec" data-num="2">2</button>
+      <button class="btn sec" data-num="3">3</button>
+      <button class="btn sec" data-num="4">4</button>
+      <button class="btn sec" data-num="0" title="Borrar">⌫</button>
+    </div>
+    <div class="tarjeta" style="margin-top:14px">
+      <button class="btn block" id="verificarM1">Verificar cerradura</button>
+    </div>
+    <p class="msg" id="msgM1"></p>
+  </section>
+
+  <!-- Misión 2: sopa de letras -->
+  <section id="sM2" hidden>
+    <div class="cabecera">
+      <button class="btn sec" data-ir="sMapa">← Mapa</button>
+      <span class="tiempo" id="tiempoM2">⏱ 00:00</span>
+    </div>
+    <div class="tarjeta">
+      <h2>🕵️ Misión 2 · Rastrear el rastro digital</h2>
+      <p>Encuentra las 3 palabras ocultas en la cuadrícula. Están en horizontal, vertical o diagonal, siempre de izquierda a derecha o de arriba abajo. Mantén el dedo sobre las letras y arrastra.</p>
+      <p class="pequeno" id="grupoM2"></p>
+    </div>
+    <div class="palabras" id="palabras"></div>
+    <p class="pequeno centro" id="contadorSopa" style="text-align:center"></p>
+    <div class="sopa" id="sopaGrid"></div>
+    <p class="msg" id="msgM2"></p>
+  </section>
+
+  <!-- Misión 3: crucigrama de nombres -->
+  <section id="sM3" hidden>
+    <div class="cabecera">
+      <button class="btn sec" data-ir="sMapa">← Mapa</button>
+      <span class="tiempo" id="tiempoM3">⏱ 00:00</span>
+    </div>
+    <div class="tarjeta">
+      <h2>🧩 Misión 3 · Desenmascarar a los agentes</h2>
+      <p>Los Ransomwarriors se infiltraron haciéndose pasar por colegas. Lee cada pista, descubre el nombre y complétalo en el crucigrama. Toca una casilla (o una pista) y escribe con el teclado.</p>
+      <p class="pequeno" id="grupoM3"></p>
+      <p class="pequeno" id="avisoPistas" hidden></p>
+    </div>
+    <div class="pista-activa" id="pistaActiva"></div>
+    <div class="cruci" id="cruci"></div>
+    <div class="teclado" id="teclado"></div>
+    <div class="pistas" id="pistas"></div>
+    <div class="tarjeta">
+      <button class="btn block" id="verificarM3">Verificar crucigrama</button>
+    </div>
+    <p class="msg" id="msgM3"></p>
+  </section>
+
+  <!-- Bóveda -->
+  <section id="sFinal" hidden>
+    <div class="cabecera">
+      <button class="btn sec" data-ir="sMapa">← Mapa</button>
+    </div>
+    <div class="bv-wrap" id="bovedaJ">
+      <div class="bv"></div>
+      <div class="bv-texto">
+        <h2 class="pixel">¡Bóveda abierta!</h2>
+        <p>Datos y modelos recuperados. Agente Bicente, misión cumplida 🥂</p>
+        <div class="insignias"><span>💾 DATOS ✔</span><span>🧠 MODELOS ✔</span></div>
+        <p class="pequeno">Mira el proyector para la clave final.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ VISTA HOST (proyector, ?host) ============ -->
+<div id="vistaHost" class="wrap ancha" hidden>
+
+  <!-- Bienvenida del proyector: el mismo relato que ven los celulares (se copia desde #sIntro) -->
+  <section id="hostBienvenida" class="intro" hidden></section>
+
+  <div class="hero grande" id="hostHero">
+    <img src="imagenes/image.png" alt="Agente Bicente">
+    <div>
+      <h1>Bicente 007 · Licencia para recuperar datos</h1>
+      <p class="sub">Escanea el código con tu celular · Máximo 10 minutos</p>
+    </div>
+  </div>
+
+  <div class="host-grid" id="hostGrid">
+    <div>
+      <div class="tarjeta centro">
+        <div class="qr" id="qr"></div>
+        <p class="pequeno">Escanea el código o entra a<br><strong id="urlJugar"></strong></p>
+      </div>
+    </div>
+
+    <div>
+      <div class="tarjeta">
+        <h2>🔐 Misión 1 · Cerradura</h2>
+        <p class="pequeno" id="hostM1"></p>
+        <div class="barra"><span id="barM1"></span></div>
+      </div>
+      <div class="tarjeta">
+        <h2>🕵️ Misión 2 · Rastro digital</h2>
+        <p class="pequeno" id="hostM2"></p>
+        <div class="barra"><span id="barM2"></span></div>
+      </div>
+      <div class="tarjeta">
+        <h2>🧩 Misión 3 · Agentes encubiertos</h2>
+        <p class="pequeno" id="hostM3"></p>
+        <div class="barra"><span id="barM3"></span></div>
+      </div>
+      <div class="tarjeta destacado" id="hostEstado"></div>
+    </div>
+  </div>
+
+  <!-- Pantalla final del proyector: se muestra al abrirse la bóveda -->
+  <div id="hostFinal" hidden>
+    <div class="bv-wrap" id="bovedaH">
+      <div class="bv"></div>
+      <div class="bv-texto">
+        <h2 class="pixel">¡Bóveda abierta!</h2>
+        <p>Datos y modelos recuperados. Agente Bicente, misión cumplida 🥂</p>
+        <div class="insignias"><span>💾 DATOS ✔</span><span>🧠 MODELOS ✔</span></div>
+        <p>🔓 Clave de la bóveda</p>
+        <div class="clave-pixel" id="claveHost"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Controles de prueba: visibles en ambas vistas, solo en modo prueba -->
+<div class="wrap" id="panelPrueba" hidden>
+  <div class="tarjeta">
+    <h2>Controles de prueba</h2>
+    <p class="pequeno">Simulan agentes en este navegador para probar el desbloqueo.</p>
+    <div class="fila-botones">
+      <button class="btn sec" id="simM1">+1 agente · M1</button>
+      <button class="btn sec" id="llenarM1">Llenar M1 a 5</button>
+    </div>
+    <div class="fila-botones" style="margin-top:8px">
+      <button class="btn sec" id="simM2">+1 agente · M2</button>
+      <button class="btn sec" id="llenarM2">Llenar M2 a 5</button>
+    </div>
+    <div class="fila-botones" style="margin-top:8px">
+      <button class="btn sec" id="simM3">+1 agente · M3</button>
+      <button class="btn sec" id="llenarM3">Llenar M3 a 5</button>
+    </div>
+    <div class="fila-botones" style="margin-top:8px">
+      <button class="btn sec" id="reiniciar">Reiniciar demo</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="panelAdmin" hidden>
+  <div class="tarjeta">
+    <h2>Administración</h2>
+    <p class="pequeno">Borra el avance de todos los agentes y vuelve a bloquear las misiones. Los celulares deben recargar la página.</p>
+    <button class="btn sec" id="btnReiniciar" type="button">Reiniciar partida</button>
+    <p class="msg" id="msgAdmin"></p>
+  </div>
+</div>
+
+<p class="pequeno pie" id="conexion"></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+/* ============ Configuración ============ */
+let REQ = 5;                                     // agentes necesarios para desbloquear la siguiente prueba (el servidor la informa)
+const CLAVE_FINAL = '';                          // en el servidor la entrega la variable de entorno CLAVE_FINAL
+const PRUEBA = location.protocol === 'file:' || location.search.includes('prueba');
+const HOST = location.search.includes('host');
+const LS_DATOS = 'bic_mision_prueba';
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+/* ============ Identidad del dispositivo ============ */
+function obtenerId() {
+  try {
+    let id = localStorage.getItem('bic_agente');
+    if (!id) {
+      id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('bic_agente', id);
+    }
+    return id;
+  } catch (e) {
+    return 'sin-almacenamiento-' + Math.random().toString(36).slice(2);
+  }
+}
+const ID = obtenerId();
+
+/* ============ Almacenamiento: local (prueba) o servidor (Render) ============ */
+function leerPrueba() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_DATOS)) || {};
+    return { m1: d.m1 || [], m2: d.m2 || [], m3: d.m3 || [] };
+  } catch (e) { return { m1: [], m2: [], m3: [] }; }
+}
+function guardarPrueba(d) {
+  try { localStorage.setItem(LS_DATOS, JSON.stringify(d)); } catch (e) {}
+}
+
+async function obtenerEstado() {
+  if (PRUEBA) {
+    const d = leerPrueba();
+    return {
+      m1: d.m1.length, m2: d.m2.length, m3: d.m3.length,
+      yo: { m1: d.m1.includes(ID), m2: d.m2.includes(ID), m3: d.m3.includes(ID) }
+    };
+  }
+  const r = await fetch('/api/estado?id=' + encodeURIComponent(ID), { cache: 'no-store' });
+  if (!r.ok) throw new Error('estado');
+  return r.json();
+}
+
+async function registrarCompletado(mision) {
+  if (PRUEBA) {
+    const d = leerPrueba();
+    if (!d[mision].includes(ID)) d[mision].push(ID);
+    guardarPrueba(d);
+    return;
+  }
+  const r = await fetch('/api/completar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mision, id: ID })
+  });
+  if (!r.ok) throw new Error('completar');
+}
+
+/* ============ Estado global ============ */
+let estado = { m1: 0, m2: 0, m3: 0, yo: { m1: false, m2: false, m3: false } };
+const pendiente = { m1: false, m2: false, m3: false };
+const tiempos = { m1: { ini: 0, fin: 0 }, m2: { ini: 0, fin: 0 }, m3: { ini: 0, fin: 0 } };
+
+async function sincronizar() {
+  try {
+    estado = await obtenerEstado();
+    if (estado.requeridos) REQ = estado.requeridos;
+    for (const m of ['m1', 'm2', 'm3']) {
+      if (!pendiente[m]) continue;
+      if (estado.yo[m]) { pendiente[m] = false; continue; }
+      await registrarCompletado(m);
+      pendiente[m] = false;
+      estado = await obtenerEstado();
+    if (estado.requeridos) REQ = estado.requeridos;
+    }
+    conexion(true);
+  } catch (e) {
+    conexion(false);
+  }
+  pintarTodo();
+}
+
+async function terminar(m) {
+  tiempos[m].fin = Date.now();
+  pendiente[m] = true;
+  await sincronizar();
+}
+
+function conexion(ok) {
+  $('#conexion').textContent = PRUEBA
+    ? '● Modo prueba: datos guardados en este navegador'
+    : (ok ? '● Conectado' : '● Sin conexión, reintentando…');
+}
+
+function msg(el, texto, tipo) {
+  el.textContent = texto;
+  el.className = 'msg' + (tipo ? ' ' + tipo : '');
+}
+
+/* ============ Navegación (jugador) ============ */
+const PANTALLAS = ['sIntro', 'sMapa', 'sM1', 'sM2', 'sM3', 'sFinal'];
+function ir(id) {
+  if (id === 'sM2' && estado.m1 < REQ) return;
+  if (id === 'sM3' && estado.m2 < REQ) return;
+  if (id === 'sFinal' && estado.m3 < REQ) return;
+  PANTALLAS.forEach(p => { $('#' + p).hidden = p !== id; });
+  $('#heroChico').hidden = id === 'sIntro';
+  $('#vistaJugador').classList.toggle('en-intro', id === 'sIntro');
+  if (id === 'sM1' && !tiempos.m1.ini) tiempos.m1.ini = Date.now();
+  if (id === 'sM2' && !tiempos.m2.ini) tiempos.m2.ini = Date.now();
+  if (id === 'sM3' && !tiempos.m3.ini) tiempos.m3.ini = Date.now();
+  window.scrollTo(0, 0);
+  pintarTodo();
+}
+
+/* ============ Misión 1: sudoku 4×4 (cuadrantes 2×2) ============ */
+const PISTAS = [[1, 2, 0, 4], [0, 4, 1, 0], [0, 1, 4, 0], [4, 0, 0, 1]];
+const SOLUCION = [[1, 2, 3, 4], [3, 4, 1, 2], [2, 1, 4, 3], [4, 3, 2, 1]];
+let sGrid = PISTAS.map(f => f.slice());
+let sSel = null, sErr = null, sHecho = false;
+
+function construirSudoku() {
+  const cont = $('#sudoku');
+  for (let caja = 0; caja < 4; caja++) {
+    const div = document.createElement('div');
+    div.className = 'caja';
+    for (let k = 0; k < 4; k++) {
+      const r = Math.floor(caja / 2) * 2 + Math.floor(k / 2);
+      const c = (caja % 2) * 2 + (k % 2);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'celda';
+      b.dataset.r = r;
+      b.dataset.c = c;
+      b.addEventListener('click', () => seleccionarSudoku(r, c));
+      div.appendChild(b);
+    }
+    cont.appendChild(div);
+  }
+}
+
+function seleccionarSudoku(r, c) {
+  if (sHecho || PISTAS[r][c]) return;
+  sSel = { r, c };
+  pintarSudoku();
+}
+
+function ponerNumero(n) {
+  if (sHecho || !sSel) return;
+  sGrid[sSel.r][sSel.c] = n;
+  sErr = null;
+  msg($('#msgM1'), '');
+  pintarSudoku();
+}
+
+function pintarSudoku() {
+  $$('#sudoku .celda').forEach(b => {
+    const r = +b.dataset.r, c = +b.dataset.c, v = sGrid[r][c];
+    b.textContent = v || '';
+    b.className = 'celda'
+      + (PISTAS[r][c] ? ' fija' : '')
+      + (sSel && sSel.r === r && sSel.c === c ? ' sel' : '')
+      + (sErr && sErr[r][c] ? ' error' : '');
+  });
+}
+
+function verificarSudoku() {
+  if (sHecho) return;
+  const el = $('#msgM1');
+  if (sGrid.some(f => f.includes(0))) {
+    return msg(el, 'Te faltan casillas, agente. Completa todo antes de verificar.', 'aviso');
+  }
+  sErr = sGrid.map((f, r) => f.map((v, c) => v !== SOLUCION[r][c]));
+  if (sErr.some(f => f.includes(true))) {
+    pintarSudoku();
+    return msg(el, '¡Ups! Hay datos fuera de lugar. La lógica llora en silencio 😅', 'error');
+  }
+  sHecho = true;
+  sSel = null;
+  sErr = null;
+  sGrid = SOLUCION.map(f => f.slice());
+  pintarSudoku();
+  msg(el, '¡Cerradura abierta! 🔓 Enviando tu informe…', 'ok');
+  terminar('m1');
+}
+
+function pintarMision1() {
+  if (estado.yo.m1 && !sHecho) {
+    sHecho = true;
+    sGrid = SOLUCION.map(f => f.slice());
+  }
+  pintarSudoku();
+  $('#grupoM1').textContent = `Equipo: ${estado.m1}/${REQ} agentes han completado esta misión.`;
+}
+
+/* ============ Misión 2: sopa de letras 8×8 (3 palabras) ============ */
+const N = 8;   // GOBIERNO tiene 8 letras: es el tablero más chico posible
+const PALABRAS = ['DATOS', 'GOBIERNO', 'MODELOS'];
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// Mismo tablero para todos los dispositivos (semilla fija)
+function generarSopa(semilla) {
+  const rnd = mulberry32(semilla);
+  const g = Array.from({ length: N }, () => Array(N).fill(''));
+  const pos = [];
+  const dirs = [[0, 1], [1, 0], [1, 1]];   // solo hacia la derecha, hacia abajo o en diagonal descendente
+  for (const w of PALABRAS) {
+    let ok = false;
+    for (let t = 0; t < 500 && !ok; t++) {
+      const [dr, dc] = dirs[Math.floor(rnd() * dirs.length)];
+      const r = Math.floor(rnd() * N), c = Math.floor(rnd() * N);
+      const er = r + dr * (w.length - 1), ec = c + dc * (w.length - 1);
+      if (er < 0 || er >= N || ec < 0 || ec >= N) continue;
+      let cabe = true;
+      for (let k = 0; k < w.length; k++) {
+        const x = g[r + dr * k][c + dc * k];
+        if (x && x !== w[k]) { cabe = false; break; }
+      }
+      if (!cabe) continue;
+      const celdas = [];
+      for (let k = 0; k < w.length; k++) {
+        g[r + dr * k][c + dc * k] = w[k];
+        celdas.push([r + dr * k, c + dc * k]);
+      }
+      pos.push({ w, celdas });
+      ok = true;
+    }
+    if (!ok) throw new Error('No cabe ' + w);
+  }
+  const L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (let r = 0; r < N; r++)
+    for (let c = 0; c < N; c++)
+      if (!g[r][c]) g[r][c] = L[Math.floor(rnd() * L.length)];
+  return { g, pos };
+}
+const SOPA = generarSopa(18);   // semilla elegida: una palabra horizontal, una vertical y una diagonal, sin repeticiones
+
+let encontradas = new Set(), hallados = new Set(), sopaHecha = false;
+let trazoIni = null, trazoFin = null, trazo = [];
+
+function construirSopa() {
+  const grid = $('#sopaGrid');
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const d = document.createElement('div');
+      d.className = 'celda';
+      d.dataset.r = r;
+      d.dataset.c = c;
+      d.textContent = SOPA.g[r][c];
+      grid.appendChild(d);
+    }
+  }
+  $('#palabras').innerHTML = PALABRAS.map(w => `<span class="chip" id="chip-${w}">${w}</span>`).join('');
+}
+
+function celdaSopa(el) {
+  const b = el && el.closest && el.closest('#sopaGrid .celda');
+  return b ? { r: +b.dataset.r, c: +b.dataset.c } : null;
+}
+
+// Línea recta entre dos celdas (horizontal, vertical o diagonal)
+function trazar(a, b) {
+  const dr = b.r - a.r, dc = b.c - a.c;
+  if (dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return [a];
+  const n = Math.max(Math.abs(dr), Math.abs(dc));
+  const sr = Math.sign(dr), sc = Math.sign(dc);
+  const out = [];
+  for (let k = 0; k <= n; k++) out.push({ r: a.r + sr * k, c: a.c + sc * k });
+  return out;
+}
+
+function probarTrazo(celdas) {
+  if (celdas.length < 2) return;
+  const txt = celdas.map(p => SOPA.g[p.r][p.c]).join('');
+  const inv = [...txt].reverse().join('');
+  const hit = PALABRAS.find(w => (w === txt || w === inv) && !encontradas.has(w));
+  if (!hit) return;
+  encontradas.add(hit);
+  celdas.forEach(p => hallados.add(p.r + ',' + p.c));
+  msg($('#msgM2'), `¡Pista confirmada: ${hit}! 🕵️`, 'ok');
+  if (encontradas.size === PALABRAS.length) {
+    sopaHecha = true;
+    msg($('#msgM2'), 'Rastro completo. Enviando informe…', 'ok');
+    terminar('m2');
+  }
+}
+
+function pintarSopa() {
+  $$('#sopaGrid .celda').forEach(d => {
+    const r = +d.dataset.r, c = +d.dataset.c;
+    const enTrazo = trazo.some(p => p.r === r && p.c === c);
+    d.className = 'celda' + (hallados.has(r + ',' + c) ? ' hallada' : '') + (enTrazo ? ' sel' : '');
+  });
+  PALABRAS.forEach(w => $('#chip-' + w).classList.toggle('ok', encontradas.has(w)));
+  $('#contadorSopa').textContent = `${encontradas.size}/${PALABRAS.length} palabras encontradas`;
+}
+
+function actualizarTrazo() {
+  trazo = trazar(trazoIni, trazoFin);
+  pintarSopa();
+}
+
+function pintarMision2() {
+  if (estado.yo.m2 && !sopaHecha) {
+    sopaHecha = true;
+    PALABRAS.forEach(w => encontradas.add(w));
+    SOPA.pos.forEach(p => p.celdas.forEach(([r, c]) => hallados.add(r + ',' + c)));
+  }
+  pintarSopa();
+  $('#grupoM2').textContent = `Equipo: ${estado.m2}/${REQ} agentes han completado esta misión.`;
+}
+
+/* ============ Misión 3: crucigrama con nombres ============ */
+// Disposición fija: Christopher en horizontal y cuatro nombres que lo cruzan en vertical.
+const CRUCI_PALABRAS = [
+  { nombre: 'Christopher', fila: 3, col: 0, dir: 'H' },
+  { nombre: 'Ricardo', fila: 1, col: 0, dir: 'V' },
+  { nombre: 'Javiera', fila: 0, col: 3, dir: 'V' },
+  { nombre: 'Osvaldo', fila: 3, col: 6, dir: 'V' },
+  { nombre: 'Alex', fila: 1, col: 9, dir: 'V' }
+];
+const CRUCI_FILAS = 10, CRUCI_COLS = 11;
+// Copia de respaldo de pistas-crucigrama.json (nombre en minúsculas -> descripción).
+// Se usa solo si el navegador no puede leer el JSON (p. ej. al abrir el HTML como archivo local).
+// Si editas el JSON, actualiza también esta copia o sirve la página con un servidor.
+const PISTAS_RESPALDO = {
+  ricardo: 'El analítico más nuevo',
+  alex: 'La joven promesa del fuchibol',
+  osvaldo: 'Osvaldo',
+  javiera: 'Compañera de jeni',
+  christopher: 'Nuestro DSS'
+};
+let pistasTexto = Object.assign({}, PISTAS_RESPALDO);
+
+const CW = CRUCI_PALABRAS.map(p => ({
+  nombre: p.nombre,
+  dir: p.dir,
+  num: 0,
+  celdas: p.nombre.toUpperCase().split('').map((l, k) => ({
+    r: p.fila + (p.dir === 'V' ? k : 0),
+    c: p.col + (p.dir === 'H' ? k : 0),
+    l
+  }))
+}));
+const CSOL = {};   // "fila,col" -> letra correcta
+CW.forEach(w => w.celdas.forEach(x => {
+  const k = x.r + ',' + x.c;
+  if (CSOL[k] && CSOL[k] !== x.l) throw new Error('Cruce inconsistente en ' + k);
+  CSOL[k] = x.l;
+}));
+// Numeración por orden de lectura de las casillas iniciales
+const CINICIOS = [...new Set(CW.map(w => w.celdas[0].r * 100 + w.celdas[0].c))].sort((a, b) => a - b);
+CW.forEach(w => { w.num = CINICIOS.indexOf(w.celdas[0].r * 100 + w.celdas[0].c) + 1; });
+
+let cGrid = {}, cSel = null, cDir = 'H', cErr = null, cHecho = false;
+const flecha = d => (d === 'H' ? '→' : '↓');
+const palabrasEn = (r, c) => CW.filter(w => w.celdas.some(x => x.r === r && x.c === c));
+function palabraActiva() {
+  if (!cSel) return null;
+  const ws = palabrasEn(cSel.r, cSel.c);
+  return ws.find(w => w.dir === cDir) || ws[0] || null;
+}
+function textoPista(w) {
+  const t = (pistasTexto[w.nombre.toLowerCase()] || '').trim();
+  return t || 'Pista por definir';
+}
+
+function construirCruci() {
+  const cont = $('#cruci');
+  for (let r = 0; r < CRUCI_FILAS; r++) {
+    for (let c = 0; c < CRUCI_COLS; c++) {
+      const d = document.createElement('div');
+      const k = r + ',' + c;
+      d.dataset.r = r;
+      d.dataset.c = c;
+      if (CSOL[k]) {
+        d.className = 'cc';
+        const ini = CW.find(w => w.celdas[0].r === r && w.celdas[0].c === c);
+        if (ini) {
+          const n = document.createElement('span');
+          n.className = 'num';
+          n.textContent = ini.num;
+          d.appendChild(n);
+        }
+        const l = document.createElement('span');
+        l.className = 'let';
+        d.appendChild(l);
+        d.addEventListener('click', () => seleccionarCruci(r, c));
+      } else {
+        d.className = 'cc vacia';
+      }
+      cont.appendChild(d);
+    }
+  }
+  const filas = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+  const tec = $('#teclado');
+  filas.forEach((f, i) => {
+    const fila = document.createElement('div');
+    fila.className = 'fila';
+    [...f].forEach(ch => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tecla';
+      b.textContent = ch;
+      b.addEventListener('click', () => escribirLetra(ch));
+      fila.appendChild(b);
+    });
+    if (i === 2) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tecla ancha';
+      b.textContent = '⌫';
+      b.setAttribute('aria-label', 'Borrar');
+      b.addEventListener('click', borrarLetra);
+      fila.appendChild(b);
+    }
+    tec.appendChild(fila);
+  });
+  document.addEventListener('keydown', e => {
+    if ($('#sM3').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^[a-zA-Z]$/.test(e.key)) { escribirLetra(e.key.toUpperCase()); e.preventDefault(); }
+    else if (e.key === 'Backspace') { borrarLetra(); e.preventDefault(); }
+  });
+}
+
+function pintarPistas() {
+  const cont = $('#pistas');
+  cont.innerHTML = '';
+  CW.slice().sort((a, b) => a.num - b.num).forEach(w => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pista';
+    b.dataset.nombre = w.nombre;
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = w.num + flecha(w.dir);
+    const t = document.createElement('span');
+    t.textContent = textoPista(w) + ' ';
+    const len = document.createElement('span');
+    len.className = 'len';
+    len.textContent = `(${w.celdas.length} letras)`;
+    t.appendChild(len);
+    b.append(n, t);
+    b.addEventListener('click', () => {
+      if (cHecho) return;
+      cDir = w.dir;
+      cSel = { r: w.celdas[0].r, c: w.celdas[0].c };
+      cErr = null;
+      pintarCruci();
+    });
+    cont.appendChild(b);
+  });
+}
+
+function seleccionarCruci(r, c) {
+  if (cHecho) return;
+  const ws = palabrasEn(r, c);
+  if (cSel && cSel.r === r && cSel.c === c && ws.length > 1) cDir = cDir === 'H' ? 'V' : 'H';
+  else if (!ws.some(w => w.dir === cDir)) cDir = ws[0].dir;
+  cSel = { r, c };
+  cErr = null;
+  pintarCruci();
+}
+
+function moverCruci(delta) {
+  const w = palabraActiva();
+  if (!w) return;
+  const i = w.celdas.findIndex(x => x.r === cSel.r && x.c === cSel.c) + delta;
+  if (i >= 0 && i < w.celdas.length) cSel = { r: w.celdas[i].r, c: w.celdas[i].c };
+}
+
+function escribirLetra(l) {
+  if (!cSel || cHecho) return;
+  cGrid[cSel.r + ',' + cSel.c] = l;
+  cErr = null;
+  msg($('#msgM3'), '');
+  moverCruci(1);
+  pintarCruci();
+}
+
+function borrarLetra() {
+  if (!cSel || cHecho) return;
+  const k = cSel.r + ',' + cSel.c;
+  if (cGrid[k]) delete cGrid[k];
+  else { moverCruci(-1); delete cGrid[cSel.r + ',' + cSel.c]; }
+  cErr = null;
+  pintarCruci();
+}
+
+function pintarCruci() {
+  const w = palabraActiva();
+  $$('#cruci .cc:not(.vacia)').forEach(d => {
+    const r = +d.dataset.r, c = +d.dataset.c, k = r + ',' + c;
+    d.querySelector('.let').textContent = cGrid[k] || '';
+    d.className = 'cc'
+      + (w && w.celdas.some(x => x.r === r && x.c === c) ? ' activa' : '')
+      + (cSel && cSel.r === r && cSel.c === c ? ' sel' : '')
+      + (cErr && cErr[k] ? ' error' : '')
+      + (cHecho ? ' ok' : '');
+  });
+  $$('#pistas .pista').forEach(b => b.classList.toggle('activa', !!w && b.dataset.nombre === w.nombre));
+  $('#pistaActiva').textContent = w
+    ? `${w.num}${flecha(w.dir)} ${textoPista(w)} (${w.celdas.length} letras)`
+    : 'Toca una casilla o una pista para empezar.';
+}
+
+function verificarCruci() {
+  if (cHecho) return;
+  const el = $('#msgM3');
+  const claves = Object.keys(CSOL);
+  if (claves.some(k => !cGrid[k])) {
+    return msg(el, 'Faltan casillas, agente. Aún hay infiltrados sin identificar.', 'aviso');
+  }
+  cErr = {};
+  claves.forEach(k => { if (cGrid[k] !== CSOL[k]) cErr[k] = true; });
+  if (Object.keys(cErr).length) {
+    pintarCruci();
+    return msg(el, '¡Ups! Algún infiltrado sigue con identidad falsa 🥸', 'error');
+  }
+  cHecho = true;
+  cErr = null;
+  cSel = null;
+  Object.assign(cGrid, CSOL);
+  pintarCruci();
+  msg(el, '¡Agentes desenmascarados! 🕶️ Enviando tu informe…', 'ok');
+  terminar('m3');
+}
+
+function pintarMision3() {
+  if (estado.yo.m3 && !cHecho) {
+    cHecho = true;
+    Object.assign(cGrid, CSOL);
+  }
+  pintarCruci();
+  $('#grupoM3').textContent = `Equipo: ${estado.m3}/${REQ} agentes han completado esta misión.`;
+}
+
+// Las pistas viven en pistas-crucigrama.json. Si el HTML se abre como archivo (file://)
+// el navegador bloquea la lectura: en ese caso quedan "por definir" hasta usar un servidor.
+async function cargarPistas() {
+  let leido = false;
+  try {
+    const r = await fetch('pistas-crucigrama.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error('pistas');
+    const j = await r.json();
+    const nuevo = {};
+    Object.keys(j).forEach(k => { if (typeof j[k] === 'string') nuevo[k.trim().toLowerCase()] = j[k]; });
+    pistasTexto = nuevo;
+    leido = true;
+  } catch (e) { /* se queda con las pistas por definir */ }
+  const aviso = $('#avisoPistas');
+  aviso.hidden = leido || !PRUEBA;
+  aviso.textContent = 'ℹ Pistas tomadas de la copia guardada en el HTML (el navegador no puede leer pistas-crucigrama.json desde un archivo local). Si cambias el JSON, usa un servidor local para verlo.';
+  pintarPistas();
+  pintarCruci();
+}
+
+/* ============ Pixel art de la bóveda (dibujado por código, sin imágenes externas) ============ */
+const BV_W = 160, BV_H = 120, BV_CX = 80, BV_CY = 60, BV_RH = 44, BV_RD = 45;
+
+function pxRect(ctx, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+function pxPix(ctx, x, y, c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
+function pxLinea(ctx, x0, y0, x1, y1, c) {
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  for (;;) {
+    pxPix(ctx, x0, y0, c);
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+function pxElipse(ctx, cx, cy, rx, ry, c) {
+  for (let y = -ry; y <= ry; y++)
+    for (let x = -rx; x <= rx; x++)
+      if ((x * x) / (rx * rx) + (y * y) / (ry * ry) <= 1) pxPix(ctx, cx + x, cy + y, c);
+}
+
+function pxMuro(x, y) {
+  const fila = Math.floor(y / 8), xx = x + (fila % 2) * 8;
+  if (y % 8 === 0 || xx % 16 === 0) return '#0f1226';
+  return ['#1b2142', '#202750', '#171c38'][(Math.floor(xx / 16) * 7 + fila * 3) % 3];
+}
+
+function pxInterior(dx, dy, d) {
+  if (dy > 26) return Math.floor(dy) % 4 === 0 ? '#2a1c05' : '#3d2a0a';   // piso
+  const rayo = Math.floor((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI) * 20) % 2;
+  if (d < 10) return '#fff7c2';
+  if (d < 20) return rayo ? '#ffe27a' : '#ffd24d';
+  if (d < 32) return rayo ? '#e0aa2a' : '#c9931f';
+  return rayo ? '#8a6310' : '#74500c';
+}
+
+function pxCilindro(ctx, cx, top, rx, alto) {
+  const borde = '#0e2a66', cuerpo = '#2f6fd6', tapa = '#7fb2ff', brillo = '#5b92f0';
+  pxRect(ctx, cx - rx - 1, top, 2 * rx + 3, alto, borde);
+  pxElipse(ctx, cx, top, rx + 1, 3, borde);
+  pxElipse(ctx, cx, top + alto, rx + 1, 3, borde);
+  pxRect(ctx, cx - rx, top, 2 * rx + 1, alto, cuerpo);
+  pxElipse(ctx, cx, top + alto, rx, 2, cuerpo);
+  pxRect(ctx, cx - rx + 1, top, 2, alto, brillo);
+  [Math.floor(alto / 3), Math.floor(alto * 2 / 3)].forEach(k => {
+    for (let x = -rx; x <= rx; x++) {
+      const yy = Math.round(2 * Math.sqrt(Math.max(0, 1 - (x * x) / (rx * rx))));
+      pxPix(ctx, cx + x, top + k + yy, borde);
+    }
+  });
+  pxElipse(ctx, cx, top, rx, 2, tapa);
+  pxPix(ctx, cx + rx - 2, top + alto - 3, '#4ade80');
+  pxPix(ctx, cx + rx - 4, top + alto - 3, '#fbbf24');
+}
+
+function pxModelo(ctx, x, y) {
+  pxRect(ctx, x, y, 28, 22, '#7c4dff');
+  pxRect(ctx, x + 1, y + 1, 26, 20, '#1d0f45');
+  const capas = [[x + 5, [y + 5, y + 11, y + 17]], [x + 14, [y + 7, y + 15]], [x + 23, [y + 11]]];
+  for (let i = 0; i < capas.length - 1; i++)
+    capas[i][1].forEach(a => capas[i + 1][1].forEach(b => pxLinea(ctx, capas[i][0], a, capas[i + 1][0], b, '#a78bfa')));
+  capas.forEach((cap, i) => cap[1].forEach(ny => {
+    pxRect(ctx, cap[0] - 1, ny - 1, 3, 3, i === 2 ? '#ffe27a' : '#5eead4');
+  }));
+}
+
+function pxBarra(ctx, x, y) {
+  pxRect(ctx, x, y, 12, 5, '#6b4a0c');
+  pxRect(ctx, x + 1, y, 10, 1, '#fff0b3');
+  pxRect(ctx, x + 1, y + 1, 10, 3, '#f5c542');
+  pxRect(ctx, x + 1, y + 4, 10, 1, '#b07d12');
+  pxPix(ctx, x + 2, y + 2, '#fff0b3');
+}
+
+function pxBrillo(ctx, x, y) {
+  pxPix(ctx, x, y, '#ffffff');
+  pxPix(ctx, x - 1, y, '#fff7c2'); pxPix(ctx, x + 1, y, '#fff7c2');
+  pxPix(ctx, x, y - 1, '#fff7c2'); pxPix(ctx, x, y + 1, '#fff7c2');
+}
+
+// Agente Bicente: gato gris con smoking, saludando
+function pxGato(ctx, x, y) {
+  const o = '#14161f', g = '#9aa0b8', gl = '#c3c8da', n = '#1b1e2b', w = '#f4f4f4';
+  // orejas
+  pxRect(ctx, x + 1, y, 3, 4, o); pxRect(ctx, x + 14, y, 3, 4, o);
+  pxRect(ctx, x + 2, y + 1, 1, 3, g); pxRect(ctx, x + 15, y + 1, 1, 3, g);
+  pxPix(ctx, x + 2, y + 2, '#e89ab0'); pxPix(ctx, x + 15, y + 2, '#e89ab0');
+  // cabeza
+  pxElipse(ctx, x + 9, y + 8, 8, 6, o);
+  pxElipse(ctx, x + 9, y + 8, 7, 5, g);
+  pxRect(ctx, x + 4, y + 9, 3, 2, gl); pxRect(ctx, x + 12, y + 9, 3, 2, gl);
+  // ojos, nariz, boca
+  pxRect(ctx, x + 5, y + 6, 3, 3, '#7bd37b'); pxRect(ctx, x + 11, y + 6, 3, 3, '#7bd37b');
+  pxRect(ctx, x + 6, y + 7, 1, 2, o); pxRect(ctx, x + 12, y + 7, 1, 2, o);
+  pxPix(ctx, x + 9, y + 9, '#e89ab0');
+  pxPix(ctx, x + 8, y + 10, o); pxPix(ctx, x + 10, y + 10, o);
+  pxLinea(ctx, x + 1, y + 9, x + 3, y + 10, gl); pxLinea(ctx, x + 17, y + 9, x + 15, y + 10, gl);
+  // cuerpo (smoking)
+  pxRect(ctx, x + 3, y + 14, 12, 11, o);
+  pxRect(ctx, x + 4, y + 14, 10, 10, n);
+  pxRect(ctx, x + 7, y + 14, 4, 7, w);
+  pxRect(ctx, x + 6, y + 14, 6, 2, o);          // moño
+  pxPix(ctx, x + 9, y + 15, '#f5c542');
+  pxRect(ctx, x + 12, y + 17, 2, 1, w);         // pañuelo
+  // brazo saludando
+  pxRect(ctx, x, y + 13, 5, 4, o); pxRect(ctx, x + 1, y + 14, 4, 2, n);
+  pxRect(ctx, x - 3, y + 10, 4, 4, o); pxRect(ctx, x - 2, y + 11, 3, 2, n);
+  pxRect(ctx, x - 4, y + 6, 5, 5, o); pxRect(ctx, x - 3, y + 7, 3, 3, g);
+  pxPix(ctx, x - 2, y + 8, o);
+  // brazo caído
+  pxRect(ctx, x + 14, y + 16, 3, 8, n); pxRect(ctx, x + 14, y + 24, 3, 2, g);
+  // piernas y patas
+  pxRect(ctx, x + 5, y + 25, 3, 3, n); pxRect(ctx, x + 10, y + 25, 3, 3, n);
+  pxRect(ctx, x + 4, y + 28, 5, 2, g); pxRect(ctx, x + 9, y + 28, 5, 2, g);
+  // cola
+  pxPix(ctx, x + 16, y + 26, g); pxPix(ctx, x + 17, y + 25, g); pxPix(ctx, x + 18, y + 24, g); pxPix(ctx, x + 18, y + 23, g);
+}
+
+function dibujarFondoBoveda(ctx) {
+  for (let y = 0; y < BV_H; y++) {
+    for (let x = 0; x < BV_W; x++) {
+      const dx = x + 0.5 - BV_CX, dy = y + 0.5 - BV_CY, d = Math.hypot(dx, dy);
+      const luz = (dx + dy) < 0;
+      let c;
+      if (d < BV_RH) c = pxInterior(dx, dy, d);
+      else if (d < BV_RH + 3) c = '#1b2238';
+      else if (d < BV_RH + 5) c = luz ? '#c4cde6' : '#8a97b8';
+      else if (d < BV_RH + 9) c = luz ? '#8a97b8' : '#5b6785';
+      else if (d < BV_RH + 10) c = '#2e3650';
+      else if (d < BV_RH + 12) c = '#0b0e1f';
+      else c = pxMuro(x, y);
+      pxPix(ctx, x, y, c);
+    }
+  }
+  // pernos del marco
+  for (let k = 0; k < 12; k++) {
+    const a = k * Math.PI / 6, r = BV_RH + 6.5;
+    const bx = Math.round(BV_CX + Math.cos(a) * r - 1), by = Math.round(BV_CY + Math.sin(a) * r - 1);
+    pxRect(ctx, bx, by, 2, 2, '#e6ecff'); pxPix(ctx, bx + 1, by + 1, '#3a4466');
+  }
+  // tesoro: datos, modelos, oro y Bicente
+  pxBarra(ctx, 47, 81); pxBarra(ctx, 60, 81); pxBarra(ctx, 53, 76);
+  pxBarra(ctx, 91, 81); pxBarra(ctx, 103, 81); pxBarra(ctx, 97, 76);
+  pxCilindro(ctx, 49, 44, 7, 18);
+  pxCilindro(ctx, 60, 52, 5, 14);
+  pxModelo(ctx, 93, 46);
+  pxGato(ctx, 71, 56);
+  [[44, 40], [118, 44], [78, 24], [60, 30], [112, 68], [40, 70]].forEach(p => pxBrillo(ctx, p[0], p[1]));
+}
+
+function dibujarDiscoBoveda(ctx) {
+  for (let y = 0; y < BV_H; y++) {
+    for (let x = 0; x < BV_W; x++) {
+      const dx = x + 0.5 - BV_CX, dy = y + 0.5 - BV_CY, d = Math.hypot(dx, dy);
+      if (d >= BV_RD) continue;
+      const luz = (dx + dy) < 0;
+      let c;
+      if (d >= 43) c = luz ? '#e6ecff' : '#a9b6d6';
+      else if (d >= 41) c = luz ? '#a9b6d6' : '#6b7898';
+      else if (d >= 39) c = '#2e3650';
+      else {
+        c = dx + dy < -14 ? '#8190b2' : (dx + dy > 22 ? '#56628a' : '#6b7898');
+        if (Math.abs(d - 30) < 1) c = '#3a4466';
+        if (Math.abs(d - 16) < 1.2) c = '#3a4466';
+        if (d < 9) c = d < 7 ? '#f5c542' : '#b07d12';
+      }
+      pxPix(ctx, x, y, c);
+    }
+  }
+  for (let k = 0; k < 12; k++) {
+    const a = k * Math.PI / 6 + Math.PI / 12, r = 35;
+    const bx = Math.round(BV_CX + Math.cos(a) * r - 1), by = Math.round(BV_CY + Math.sin(a) * r - 1);
+    pxRect(ctx, bx, by, 2, 2, '#e6ecff'); pxPix(ctx, bx + 1, by + 1, '#3a4466');
+  }
+  // bisagras a la izquierda
+  pxRect(ctx, 33, 38, 6, 9, '#3a4466'); pxRect(ctx, 34, 39, 2, 7, '#a9b6d6');
+  pxRect(ctx, 33, 73, 6, 9, '#3a4466'); pxRect(ctx, 34, 74, 2, 7, '#a9b6d6');
+}
+
+function dibujarRuedaBoveda(ctx) {
+  const cx = 24, cy = 24;
+  for (let k = 0; k < 6; k++) {
+    const a = k * Math.PI / 3 + Math.PI / 6;
+    const ex = Math.round(cx + Math.cos(a) * 19), ey = Math.round(cy + Math.sin(a) * 19);
+    pxLinea(ctx, cx, cy, ex, ey, '#0e1226');
+    pxLinea(ctx, cx + 1, cy, ex + 1, ey, '#d6dcf0');
+    pxLinea(ctx, cx, cy + 1, ex, ey + 1, '#aab4d4');
+    pxElipse(ctx, ex, ey, 3, 3, '#0e1226');
+    pxElipse(ctx, ex, ey, 2, 2, '#f5c542');
+    pxPix(ctx, ex - 1, ey - 1, '#fff0b3');
+  }
+  pxElipse(ctx, cx, cy, 6, 6, '#0e1226');
+  pxElipse(ctx, cx, cy, 5, 5, '#f5c542');
+  pxElipse(ctx, cx, cy, 2, 2, '#fff0b3');
+}
+
+function crearEscenaBoveda(wrap) {
+  const mont = wrap.querySelector('.bv');
+  mont.innerHTML = '<canvas class="bv-fondo" width="160" height="120"></canvas>'
+    + '<div class="bv-luz"></div>'
+    + '<div class="bv-puerta"><canvas class="bv-disco" width="160" height="120"></canvas>'
+    + '<canvas class="bv-rueda" width="48" height="48"></canvas></div>'
+    + '<div class="bv-confeti"></div>';
+  dibujarFondoBoveda(mont.querySelector('.bv-fondo').getContext('2d'));
+  dibujarDiscoBoveda(mont.querySelector('.bv-disco').getContext('2d'));
+  dibujarRuedaBoveda(mont.querySelector('.bv-rueda').getContext('2d'));
+  const colores = ['#f5c542', '#ffe28a', '#5eead4', '#a78bfa', '#f87171', '#4ade80', '#ffffff'];
+  const conf = mont.querySelector('.bv-confeti');
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('i');
+    p.style.left = (2 + Math.random() * 94) + '%';
+    p.style.background = colores[i % colores.length];
+    p.style.setProperty('--t', (2.6 + Math.random() * 2.4).toFixed(2) + 's');
+    p.style.setProperty('--d', (3.4 + Math.random() * 3).toFixed(2) + 's');
+    conf.appendChild(p);
+  }
+  let abierta = false, timer = 0;
+  return {
+    abrir() {
+      if (abierta) return;
+      abierta = true;
+      clearTimeout(timer);
+      timer = setTimeout(() => wrap.classList.add('abierta'), 350);
+    },
+    cerrar() {
+      abierta = false;
+      clearTimeout(timer);
+      wrap.classList.remove('abierta');
+    }
+  };
+}
+let escenaJ = null, escenaH = null;
+
+/* ============ Bóveda y host ============ */
+function pintarBoveda() {
+  if (!escenaJ) return;
+  if (estado.m3 < REQ) { escenaJ.cerrar(); return; }
+  if (!$('#sFinal').hidden) escenaJ.abrir();   // la animación arranca cuando la pantalla es visible
+}
+
+function pintarMapa() {
+  $('#estM1').textContent = estado.yo.m1
+    ? `✅ Completada · ${estado.m1}/${REQ} agentes`
+    : `Abierta · ${estado.m1}/${REQ} agentes`;
+  $('#btnM1').classList.toggle('hecha', estado.yo.m1);
+
+  const bloqueada2 = estado.m1 < REQ;
+  $('#btnM2').disabled = bloqueada2;
+  $('#btnM2').classList.toggle('hecha', estado.yo.m2);
+  $('#estM2').textContent = bloqueada2
+    ? `🔒 Bloqueada · faltan ${REQ - estado.m1} agentes en la Misión 1`
+    : (estado.yo.m2 ? `✅ Completada · ${estado.m2}/${REQ} agentes` : `Abierta · ${estado.m2}/${REQ} agentes`);
+
+  const bloqueada3 = estado.m2 < REQ;
+  $('#btnM3').disabled = bloqueada3;
+  $('#btnM3').classList.toggle('hecha', estado.yo.m3);
+  $('#estM3').textContent = bloqueada3
+    ? `🔒 Bloqueada · faltan ${REQ - estado.m2} agentes en la Misión 2`
+    : (estado.yo.m3 ? `✅ Completada · ${estado.m3}/${REQ} agentes` : `Abierta · ${estado.m3}/${REQ} agentes`);
+
+  const bloqueadaF = estado.m3 < REQ;
+  $('#btnFinal').disabled = bloqueadaF;
+  $('#estFinal').textContent = bloqueadaF
+    ? `🔒 Bloqueada · faltan ${REQ - estado.m3} agentes en la Misión 3`
+    : '🔓 Abierta';
+}
+
+function pintarHost() {
+  if (!HOST) return;
+  [['M1', estado.m1], ['M2', estado.m2], ['M3', estado.m3]].forEach(([m, n]) => {
+    $('#host' + m).textContent = `${n} / ${REQ} agentes completaron la misión`;
+    $('#bar' + m).style.width = Math.min(100, n / REQ * 100) + '%';
+  });
+
+  const abierta = estado.m3 >= REQ;
+  const bienvenida = hostVista === 'bienvenida';
+  $('#hostBienvenida').hidden = !bienvenida;
+  $('#hostHero').hidden = bienvenida;
+  $('#vistaHost').classList.toggle('en-intro', bienvenida);
+  $('#hostGrid').hidden = bienvenida || abierta;
+  $('#hostFinal').hidden = bienvenida || !abierta;
+  $('#claveHost').textContent = estado.clave || CLAVE_FINAL;
+  if (escenaH) { if (abierta && !bienvenida) escenaH.abrir(); else escenaH.cerrar(); }
+  $('#hostEstado').textContent = estado.m1 < REQ
+    ? `Misión 1 en curso · faltan ${REQ - estado.m1} agentes para abrir la Misión 2`
+    : (estado.m2 < REQ
+      ? `Misión 2 en curso · faltan ${REQ - estado.m2} agentes para abrir la Misión 3`
+      : `Misión 3 en curso · faltan ${Math.max(0, REQ - estado.m3)} agentes para abrir la bóveda`);
+}
+
+function generarQR() {
+  const url = PRUEBA ? location.href.split('?')[0] : location.origin + '/';
+  $('#urlJugar').textContent = url;
+  if (typeof qrcode !== 'function') {
+    $('#qr').textContent = 'QR no disponible sin conexión a internet';
+    return;
+  }
+  const qr = qrcode(0, 'M');
+  qr.addData(url);
+  qr.make();
+  $('#qr').innerHTML = qr.createSvgTag(6, 2);
+}
+
+/* ============ Pintado general ============ */
+function pintarTodo() {
+  pintarMapa();
+  pintarMision1();
+  pintarMision2();
+  pintarMision3();
+  pintarBoveda();
+  pintarHost();
+}
+
+function tick() {
+  ['m1', 'm2', 'm3'].forEach(m => {
+    const t = tiempos[m];
+    const s = t.ini ? Math.floor(((t.fin || Date.now()) - t.ini) / 1000) : 0;
+    const txt = `⏱ ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    $('#tiempo' + m.toUpperCase()).textContent = txt;
+  });
+}
+
+/* ============ Controles de prueba ============ */
+function simular(m, n) {
+  const d = leerPrueba();
+  for (let i = 0; i < n; i++) d[m].push('sim-' + m + '-' + Math.random().toString(36).slice(2));
+  guardarPrueba(d);
+  sincronizar();
+}
+function llenar(m) {
+  const faltan = Math.max(0, REQ - leerPrueba()[m].length);
+  simular(m, faltan);
+}
+
+/* ============ Música de fondo ============ */
+const musica = $('#musica');
+musica.volume = 0.25;
+function pintarBtnMusica() { $('#btnMusica').textContent = musica.paused ? '🔇' : '🔊'; }
+async function alternarMusica() {
+  try {
+    if (musica.paused) await musica.play(); else musica.pause();
+  } catch (e) { /* el navegador bloqueó la reproducción */ }
+  pintarBtnMusica();
+}
+function iniciarMusica() {
+  $('#btnMusica').addEventListener('click', alternarMusica);
+  musica.addEventListener('play', pintarBtnMusica);
+  musica.addEventListener('pause', pintarBtnMusica);
+  // En el proyector suena desde el primer clic (los navegadores no permiten autoplay);
+  // en los celulares queda en silencio para no armar un coro de 20 teléfonos.
+  if (HOST) {
+    musica.play().catch(() => {
+      document.addEventListener('pointerdown', () => { if (musica.paused) musica.play().catch(() => {}); }, { once: true });
+    });
+  }
+}
+
+/* ============ Administración del proyector ============ */
+function iniciarAdmin(clave) {
+  $('#panelAdmin').hidden = false;
+  const btn = $('#btnReiniciar');
+  let armado = 0;
+  btn.addEventListener('click', async () => {
+    if (!armado) {   // doble confirmación: borra el avance de todos
+      btn.textContent = '¿Seguro? Pulsa otra vez para borrar el avance';
+      armado = setTimeout(() => { armado = 0; btn.textContent = 'Reiniciar partida'; }, 5000);
+      return;
+    }
+    clearTimeout(armado);
+    armado = 0;
+    btn.textContent = 'Reiniciar partida';
+    try {
+      const r = await fetch('/api/reiniciar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clave })
+      });
+      if (!r.ok) throw new Error((await r.json()).error || 'error');
+      msg($('#msgAdmin'), 'Partida reiniciada ✔', 'ok');
+      try { sessionStorage.removeItem('bic_host_iniciado'); } catch (e) {}
+      hostVista = 'bienvenida';   // tras reiniciar se vuelve a la bienvenida
+      sincronizar();
+    } catch (e) {
+      msg($('#msgAdmin'), 'No se pudo reiniciar: ' + e.message, 'error');
+    }
+  });
+}
+
+/* ============ Bienvenida del proyector ============ */
+// El proyector abre con el relato completo (el mismo de los celulares) y, al pulsar
+// "Iniciar misión", pasa al QR y las barras de avance. Si se recarga la página en
+// plena partida, recuerda que ya se inició (sessionStorage) y no vuelve a la bienvenida.
+let hostVista = 'juego';
+function prepararBienvenida() {
+  let iniciado = false;
+  try { iniciado = sessionStorage.getItem('bic_host_iniciado') === '1'; } catch (e) {}
+  hostVista = iniciado ? 'juego' : 'bienvenida';
+  const sec = $('#hostBienvenida');
+  sec.innerHTML = $('#sIntro').innerHTML;
+  const btn = sec.querySelector('.btn.grande');
+  btn.removeAttribute('data-ir');
+  btn.textContent = 'Iniciar misión';
+  btn.addEventListener('click', () => {
+    try { sessionStorage.setItem('bic_host_iniciado', '1'); } catch (e) {}
+    hostVista = 'juego';
+    pintarHost();
+  });
+  const aviso = sec.querySelector('.autodestruye');
+  if (aviso) aviso.textContent = 'Al iniciar aparece el código QR para que los agentes se conecten.';
+}
+
+/* ============ Arranque ============ */
+function iniciar() {
+  iniciarMusica();
+  construirSudoku();
+  construirSopa();
+  construirCruci();
+  escenaJ = crearEscenaBoveda($('#bovedaJ'));
+  escenaH = crearEscenaBoveda($('#bovedaH'));
+  cargarPistas();
+
+  $$('[data-ir]').forEach(b => b.addEventListener('click', () => ir(b.dataset.ir)));
+  $$('[data-num]').forEach(b => b.addEventListener('click', () => ponerNumero(+b.dataset.num)));
+  $('#verificarM1').addEventListener('click', verificarSudoku);
+  $('#verificarM3').addEventListener('click', verificarCruci);
+
+  const grid = $('#sopaGrid');
+  grid.addEventListener('pointerdown', e => {
+    if (sopaHecha) return;
+    const p = celdaSopa(e.target);
+    if (!p) return;
+    trazoIni = trazoFin = p;
+    grid.setPointerCapture(e.pointerId);
+    actualizarTrazo();
+  });
+  grid.addEventListener('pointermove', e => {
+    if (!trazoIni) return;
+    const p = celdaSopa(document.elementFromPoint(e.clientX, e.clientY));
+    if (p && (p.r !== trazoFin.r || p.c !== trazoFin.c)) {
+      trazoFin = p;
+      actualizarTrazo();
+    }
+  });
+  const soltar = () => {
+    if (!trazoIni) return;
+    const celdas = trazo;
+    trazoIni = trazoFin = null;
+    trazo = [];
+    probarTrazo(celdas);
+    pintarSopa();
+  };
+  grid.addEventListener('pointerup', soltar);
+  grid.addEventListener('pointercancel', soltar);
+
+  if (PRUEBA) {
+    $('#badgePrueba').hidden = false;
+    $('#panelPrueba').hidden = false;
+    $('#simM1').addEventListener('click', () => simular('m1', 1));
+    $('#llenarM1').addEventListener('click', () => llenar('m1'));
+    $('#simM2').addEventListener('click', () => simular('m2', 1));
+    $('#llenarM2').addEventListener('click', () => llenar('m2'));
+    $('#simM3').addEventListener('click', () => simular('m3', 1));
+    $('#llenarM3').addEventListener('click', () => llenar('m3'));
+    $('#reiniciar').addEventListener('click', () => {
+      try { localStorage.removeItem(LS_DATOS); } catch (e) {}
+      location.reload();
+    });
+  }
+
+  if (HOST) {
+    $('#vistaJugador').hidden = true;
+    $('#vistaHost').hidden = false;
+    prepararBienvenida();
+    generarQR();
+    const claveAdmin = new URLSearchParams(location.search).get('clave');
+    if (claveAdmin && !PRUEBA) iniciarAdmin(claveAdmin);
+  } else {
+    ir('sIntro');
+  }
+
+  sincronizar();
+  setInterval(sincronizar, 3000);
+  setInterval(tick, 1000);
+  window.addEventListener('storage', sincronizar);
+}
+
+iniciar();
+</script>
+</body>
+</html>
